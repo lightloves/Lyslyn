@@ -1,0 +1,32 @@
+# ==============================================================================
+# Example 07: First-Class English HTTP Requests
+# ==============================================================================
+
+Import json
+
+Print "Sending HTTP GET request..."
+Send a GET request to "https://httpbin.org/get" save response as get_resp
+
+Print "GET Status Code:", get_resp.status
+Print "Request was OK?:", get_resp.ok
+
+Set get_data to get_resp.json()
+Print "Remote URL returned by server:", get_data.url
+
+Print "\nSending HTTP POST request with structured payload..."
+Send a POST request to "https://httpbin.org/post":
+    headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Lyslyn-Client/1.0"
+    }
+    data: {
+        "username": "Raj",
+        "action": "Language Creation",
+        "timestamp": "2026-10-25"
+    }
+    timeout: 10
+    save response as post_resp
+
+Print "POST Status Code:", post_resp.status
+Set post_data to post_resp.json()
+Print "Server received payload:", post_data.json

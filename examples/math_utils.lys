@@ -1,0 +1,10 @@
+# Helper math utilities module
+
+Create a function called square with x:
+    Return x * x
+
+Create a function called cube with x:
+    Return x * x * x
+
+Create a function called is_even with n:
+    Return n % 2 is equal to 0

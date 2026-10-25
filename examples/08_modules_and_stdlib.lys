@@ -1,0 +1,42 @@
+# ==============================================================================
+# Example 08: Standard Library Modules & Custom File Imports
+# ==============================================================================
+
+# Standard Library imports
+Import math
+Import text
+Import time
+Import random
+Import log
+
+# Custom local module import
+Import "./math_utils.lys" as math_utils
+
+# Using math module
+Print "--- Math Module ---"
+Print "Value of PI:", math.pi
+Print "Square root of 144:", math.sqrt(144)
+Print "Round 3.14159 to 2 decimals:", math.round(3.14159, 2)
+
+# Using local module
+Print "\n--- Local Module (math_utils) ---"
+Print "Square of 7:", math_utils.square(7)
+Print "Cube of 3:", math_utils.cube(3)
+Print "Is 10 even?:", math_utils.is_even(10)
+
+# Using text module
+Print "\n--- Text Module ---"
+Set raw_str to "   Welcome to Lyslyn   "
+Set clean_str to text.trim(raw_str)
+Print "Trimmed:", clean_str
+Print "Uppercase:", text.uppercase(clean_str)
+Print "Split words:", text.split(clean_str, " ")
+
+# Using time and random modules
+Print "\n--- Time and Random Modules ---"
+Print "Current ISO Timestamp:", time.now()
+Set lucky_number to random.integer(1, 100)
+Print "Random number (1..100):", lucky_number
+
+# Using log module
+log.info("Finished running standard library showcase!")

@@ -1,0 +1,46 @@
+# ==============================================================================
+# Example 02: Structured English Control Flow
+# ==============================================================================
+
+# Conditionals with English comparisons
+Set score to 85
+
+If score is at least 90:
+    Print "Grade: A - Outstanding!"
+Otherwise if score is at least 80:
+    Print "Grade: B - Very Good!"
+Otherwise if score is at least 70:
+    Print "Grade: C - Good"
+Otherwise:
+    Print "Grade: Needs improvement"
+
+# While loop with Increase statement
+Print "\n--- Counting Up with While Loop ---"
+Set counter to 1
+While counter is at most 5:
+    Print "Counter is at:", counter
+    Increase counter by 1
+
+# For-each loop over a list
+Print "\n--- Iterating with For-Each Loop ---"
+Set languages to ["Lyslyn", "Python", "Rust", "TypeScript"]
+For each lang in languages:
+    Print "Language option:", lang
+
+# Repeat loop
+Print "\n--- Repeating an Action ---"
+Repeat 3 times:
+    Print "Lyslyn is simple and expressive!"
+
+# Break and Continue
+Print "\n--- Loop Control (Break & Continue) ---"
+Set num to 0
+While num < 10:
+    Increase num by 1
+    If num is equal to 3:
+        Print "Skipping 3..."
+        Continue to next iteration
+    If num is equal to 6:
+        Print "Stopping at 6!"
+        Break out of loop
+    Print "Active number:", num

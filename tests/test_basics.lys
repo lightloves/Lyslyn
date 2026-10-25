@@ -1,0 +1,35 @@
+# Unit tests: Language Basics & Arithmetic
+
+Set a to 10
+Set b to 20
+Set c to a + b
+Assert(c is equal to 30, "Addition assertion")
+
+Set diff to b - a
+Assert(diff is equal to 10, "Subtraction assertion")
+
+Set prod to a * b
+Assert(prod is equal to 200, "Multiplication assertion")
+
+Set quot to b / a
+Assert(quot is equal to 2, "Division assertion")
+
+Set mod to 25 % 10
+Assert(mod is equal to 5, "Modulo assertion")
+
+Constant PI is 3.14
+Assert(PI > 3.0, "Constant assertion")
+
+Set str1 to "Hello"
+Set str2 to "World"
+Assert(str1 + ", " + str2 is equal to "Hello, World", "String concatenation")
+
+Set name to "Lyslyn"
+Set msg to "Welcome to {name}!"
+Assert(msg is equal to "Welcome to Lyslyn!", "String interpolation")
+
+Assert(true and true, "Logical AND")
+Assert(true or false, "Logical OR")
+Assert(not false, "Logical NOT")
+Assert(10 is at least 10, "Comparison at least")
+Assert(5 is at most 10, "Comparison at most")

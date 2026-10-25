@@ -1,0 +1,960 @@
+"""Recursive-descent parser for Lyslyn."""
+import re
+from typing import List, Tuple, Optional, Any, Union
+from .tokens import Token, TokenType
+from .ast_nodes import (
+    ASTNode, Expr, Stmt, Program,
+    LiteralExpr, VariableExpr, BinaryExpr, UnaryExpr,
+    ListExpr, MapExpr, MemberAccessExpr, IndexAccessExpr,
+    CallExpr, StringInterpolationExpr, AskExpr, ConditionalExpr,
+    BlockStmt, SetStmt, ChangeStmt, IfStmt, WhileStmt,
+    ForStmt, RepeatStmt, FunctionStmt, ReturnStmt,
+    BreakStmt, ContinueStmt, TryStmt, RaiseStmt,
+    ImportStmt, HttpStmt, PrintStmt, ExprStmt
+)
+from .diagnostics import ParseError
+
+
+# Set of tokens that can be accepted as identifiers in context
+CONTEXTUAL_IDENTIFIER_TYPES = {
+    TokenType.IDENTIFIER,
+    TokenType.DATA,
+    TokenType.HEADERS,
+    TokenType.PARAMS,
+    TokenType.TIMEOUT,
+    TokenType.RESPONSE,
+    TokenType.ERROR,
+    TokenType.TIMES,
+    TokenType.EACH,
+    TokenType.CALLED,
+    TokenType.METHOD,
+    TokenType.REQUEST,
+    TokenType.WITH,
+    TokenType.BY,
+    TokenType.TO,
+    TokenType.AS,
+}
+
+
+class Parser:
+    def __init__(self, tokens: List[Token], filename: str = "<input>", source: str = ""):
+        self.tokens = tokens
+        self.filename = filename
+        self.source = source
+        self.current = 0
+
+    def is_identifier_like(self, token: Token) -> bool:
+        return token.type in CONTEXTUAL_IDENTIFIER_TYPES
+
+    def consume_identifier(self, message: str) -> Token:
+        if self.is_identifier_like(self.peek()):
+            return self.advance()
+        raise self.error(self.peek(), message)
+
+
+    def parse(self) -> Program:
+        statements: List[Stmt] = []
+        self.skip_newlines()
+        while not self.is_at_end():
+            stmt = self.statement()
+            if stmt is not None:
+                statements.append(stmt)
+            self.skip_newlines()
+        return Program(statements=statements)
+
+    # ========================================================================
+    # Statement Parsing
+    # ========================================================================
+
+    def statement(self) -> Stmt:
+        self.skip_newlines()
+
+        # Variable declarations & assignments
+        if self.match(TokenType.SET, TokenType.LET):
+            return self.set_statement()
+
+        if self.match(TokenType.CONSTANT):
+            return self.constant_statement()
+
+        if self.check(TokenType.DEFINE) and self.check_next(TokenType.CONSTANT):
+            self.advance()  # 'define'
+            self.advance()  # 'constant'
+            return self.constant_statement()
+
+        # Change / Increase / Decrease
+        if self.match(TokenType.INCREASE):
+            return self.change_statement("increase")
+        if self.match(TokenType.DECREASE):
+            return self.change_statement("decrease")
+        if self.match(TokenType.CHANGE):
+            return self.change_statement("change")
+
+        # Control flow
+        if self.match(TokenType.IF):
+            return self.if_statement()
+
+        if self.match(TokenType.WHILE):
+            return self.while_statement()
+
+        if self.match(TokenType.FOR):
+            return self.for_statement()
+
+        if self.match(TokenType.REPEAT):
+            return self.repeat_statement()
+
+        # Functions
+        if self.match(TokenType.ASYNC):
+            return self.function_statement(is_async=True)
+
+        if self.match(TokenType.FUNCTION):
+            return self.function_statement(is_async=False)
+
+        if self.match(TokenType.DEFINE):
+            if self.match(TokenType.FUNCTION):
+                return self.function_statement(is_async=False)
+            raise self.error(self.previous(), "Expected 'function' or 'constant' after 'define'")
+
+        if self.match(TokenType.CREATE):
+            # 'Create a function called ...'
+            if self.check_identifier("a") or self.check_identifier("an"):
+                self.advance()
+            self.consume(TokenType.FUNCTION, "Expected 'function' after 'create'")
+            if self.match(TokenType.CALLED):
+                pass
+            return self.function_statement(is_async=False)
+
+        # Return, Break, Continue
+        if self.match(TokenType.RETURN):
+            return self.return_statement()
+
+        if self.match(TokenType.BREAK):
+            return self.break_statement()
+
+        if self.match(TokenType.CONTINUE):
+            return self.continue_statement()
+
+        # Error Handling
+        if self.match(TokenType.TRY):
+            return self.try_statement()
+
+        if self.match(TokenType.RAISE, TokenType.THROW):
+            return self.raise_statement()
+
+        # Modules
+        if self.match(TokenType.IMPORT):
+            return self.import_statement()
+
+        if self.match(TokenType.FROM):
+            return self.from_import_statement()
+
+        # Network / HTTP
+        if self.match(TokenType.SEND):
+            return self.http_statement()
+
+        # I/O
+        if self.match(TokenType.PRINT):
+            return self.print_statement()
+
+        # Run / Call statement: 'Run greet with "Raj"'
+        if self.check_identifier("run"):
+            run_tok = self.advance()
+            callee_name = self.consume_identifier( "Expected function name after 'run'")
+            callee = VariableExpr(callee_name.lexeme, callee_name.line, callee_name.column)
+            args: List[Expr] = []
+            if self.match(TokenType.WITH):
+                args.append(self.expression())
+                while self.match(TokenType.COMMA):
+                    args.append(self.expression())
+            self.consume_statement_end()
+            return ExprStmt(CallExpr(callee, args, run_tok.line, run_tok.column), run_tok.line, run_tok.column)
+
+        if self.check_identifier("call"):
+            call_tok = self.advance()
+            callee = self.primary()
+            args = []
+            if self.match(TokenType.LPAREN):
+                if not self.check(TokenType.RPAREN):
+                    args.append(self.expression())
+                    while self.match(TokenType.COMMA):
+                        args.append(self.expression())
+                self.consume(TokenType.RPAREN, "Expected ')' after call arguments")
+            elif self.match(TokenType.WITH):
+                args.append(self.expression())
+                while self.match(TokenType.COMMA):
+                    args.append(self.expression())
+            self.consume_statement_end()
+            return ExprStmt(CallExpr(callee, args, call_tok.line, call_tok.column), call_tok.line, call_tok.column)
+
+        # Expression statement
+        return self.expression_statement()
+
+    def set_statement(self) -> SetStmt:
+        keyword = self.previous()
+        target = self.target_expression()
+        if not self.match(TokenType.TO, TokenType.EQUAL_SIGN):
+            raise self.error(self.peek(), "Expected 'to' or '=' after assignment target")
+        value = self.expression()
+        self.consume_statement_end()
+        return SetStmt(target=target, value=value, is_constant=False, line=keyword.line, column=keyword.column)
+
+    def constant_statement(self) -> SetStmt:
+        keyword = self.previous()
+        name_tok = self.consume_identifier( "Expected constant name")
+        target = VariableExpr(name_tok.lexeme, name_tok.line, name_tok.column)
+        if not (self.match(TokenType.IS, TokenType.TO, TokenType.AS, TokenType.EQUAL_SIGN)):
+            raise self.error(self.peek(), "Expected 'is', 'as', or '=' after constant name")
+        value = self.expression()
+        self.consume_statement_end()
+        return SetStmt(target=target, value=value, is_constant=True, line=keyword.line, column=keyword.column)
+
+    def change_statement(self, op: str) -> ChangeStmt:
+        keyword = self.previous()
+        target = self.target_expression()
+        if op in ("increase", "decrease"):
+            self.consume(TokenType.BY, f"Expected 'by' after target in {op} statement")
+        else:
+            self.consume(TokenType.TO, "Expected 'to' after target in change statement")
+        value = self.expression()
+        self.consume_statement_end()
+        return ChangeStmt(target=target, operation=op, value=value, line=keyword.line, column=keyword.column)
+
+    def target_expression(self) -> Expr:
+        """Parse lvalue: variable, member access, or index access."""
+        name_tok = self.consume_identifier( "Expected variable name")
+        expr: Expr = VariableExpr(name_tok.lexeme, name_tok.line, name_tok.column)
+
+        while True:
+            if self.match(TokenType.DOT):
+                member_tok = self.consume_identifier( "Expected property name after '.'")
+                expr = MemberAccessExpr(expr, member_tok.lexeme, member_tok.line, member_tok.column)
+            elif self.match(TokenType.LBRACKET):
+                index_expr = self.expression()
+                self.consume(TokenType.RBRACKET, "Expected ']' after index")
+                expr = IndexAccessExpr(expr, index_expr, name_tok.line, name_tok.column)
+            else:
+                break
+        return expr
+
+    def if_statement(self) -> IfStmt:
+        keyword = self.previous()
+        condition = self.expression()
+        self.consume(TokenType.COLON, "Expected ':' after if condition")
+        body = self.block()
+
+        branches: List[Tuple[Expr, BlockStmt]] = [(condition, body)]
+        otherwise_branch: Optional[BlockStmt] = None
+
+        while True:
+            self.skip_newlines()
+            if self.match(TokenType.OTHERWISE) or self.match(TokenType.ELSE):
+                if self.match(TokenType.IF):
+                    cond = self.expression()
+                    self.consume(TokenType.COLON, "Expected ':' after condition")
+                    b = self.block()
+                    branches.append((cond, b))
+                else:
+                    self.consume(TokenType.COLON, "Expected ':' after 'otherwise' / 'else'")
+                    otherwise_branch = self.block()
+                    break
+            else:
+                break
+
+        return IfStmt(branches=branches, otherwise_branch=otherwise_branch, line=keyword.line, column=keyword.column)
+
+    def while_statement(self) -> WhileStmt:
+        keyword = self.previous()
+        condition = self.expression()
+        self.consume(TokenType.COLON, "Expected ':' after while condition")
+        body = self.block()
+        return WhileStmt(condition=condition, body=body, line=keyword.line, column=keyword.column)
+
+    def for_statement(self) -> ForStmt:
+        keyword = self.previous()
+        if self.match(TokenType.EACH):
+            pass
+        var_tok = self.consume_identifier( "Expected variable name in for loop")
+        self.consume(TokenType.IN, "Expected 'in' after for loop variable")
+        iterable = self.expression()
+        self.consume(TokenType.COLON, "Expected ':' after for loop target")
+        body = self.block()
+        return ForStmt(variable=var_tok.lexeme, iterable=iterable, body=body, line=keyword.line, column=keyword.column)
+
+    def repeat_statement(self) -> RepeatStmt:
+        keyword = self.previous()
+        count = self.expression()
+        self.consume(TokenType.TIMES, "Expected 'times' after repeat count")
+        self.consume(TokenType.COLON, "Expected ':' after repeat statement")
+        body = self.block()
+        return RepeatStmt(count=count, body=body, line=keyword.line, column=keyword.column)
+
+    def function_statement(self, is_async: bool) -> FunctionStmt:
+        keyword = self.previous()
+        name_tok = self.consume_identifier( "Expected function name")
+        params: List[str] = []
+
+        if self.match(TokenType.WITH):
+            p = self.consume_identifier( "Expected parameter name")
+            params.append(p.lexeme)
+            while self.match(TokenType.COMMA):
+                p = self.consume_identifier( "Expected parameter name")
+                params.append(p.lexeme)
+        elif self.match(TokenType.LPAREN):
+            if not self.check(TokenType.RPAREN):
+                p = self.consume_identifier( "Expected parameter name")
+                params.append(p.lexeme)
+                while self.match(TokenType.COMMA):
+                    p = self.consume_identifier( "Expected parameter name")
+                    params.append(p.lexeme)
+            self.consume(TokenType.RPAREN, "Expected ')' after parameters")
+
+        self.consume(TokenType.COLON, "Expected ':' before function body")
+        body = self.block()
+        return FunctionStmt(
+            name=name_tok.lexeme,
+            params=params,
+            body=body,
+            is_async=is_async,
+            line=keyword.line,
+            column=keyword.column
+        )
+
+    def return_statement(self) -> ReturnStmt:
+        keyword = self.previous()
+        value: Optional[Expr] = None
+        if not self.check(TokenType.NEWLINE) and not self.check(TokenType.EOF):
+            if self.match(TokenType.NIL):
+                value = LiteralExpr(None, keyword.line, keyword.column)
+            else:
+                value = self.expression()
+        self.consume_statement_end()
+        return ReturnStmt(value=value, line=keyword.line, column=keyword.column)
+
+    def break_statement(self) -> BreakStmt:
+        keyword = self.previous()
+        if self.check_identifier("out"):
+            self.advance()
+            if self.check_identifier("of"):
+                self.advance()
+            if self.check_identifier("loop"):
+                self.advance()
+        self.consume_statement_end()
+        return BreakStmt(line=keyword.line, column=keyword.column)
+
+    def continue_statement(self) -> ContinueStmt:
+        keyword = self.previous()
+        if self.match(TokenType.TO):
+            if self.check_identifier("next"):
+                self.advance()
+            if self.check_identifier("iteration"):
+                self.advance()
+        self.consume_statement_end()
+        return ContinueStmt(line=keyword.line, column=keyword.column)
+
+    def try_statement(self) -> TryStmt:
+        keyword = self.previous()
+        self.consume(TokenType.COLON, "Expected ':' after 'try'")
+        try_block = self.block()
+
+        self.skip_newlines()
+        self.consume(TokenType.CATCH, "Expected 'catch' block after 'try'")
+        if self.match(TokenType.ERROR):
+            pass
+        catch_var: Optional[str] = None
+        if self.match(TokenType.AS):
+            var_tok = self.consume_identifier( "Expected variable name after 'catch error as'")
+            catch_var = var_tok.lexeme
+        self.consume(TokenType.COLON, "Expected ':' after 'catch'")
+        catch_block = self.block()
+
+        finally_block: Optional[BlockStmt] = None
+        self.skip_newlines()
+        if self.match(TokenType.FINALLY):
+            self.consume(TokenType.COLON, "Expected ':' after 'finally'")
+            finally_block = self.block()
+
+        return TryStmt(
+            try_block=try_block,
+            catch_var=catch_var,
+            catch_block=catch_block,
+            finally_block=finally_block,
+            line=keyword.line,
+            column=keyword.column
+        )
+
+    def raise_statement(self) -> RaiseStmt:
+        keyword = self.previous()
+        if self.match(TokenType.ERROR):
+            pass
+        expr = self.expression()
+        self.consume_statement_end()
+        return RaiseStmt(expression=expr, line=keyword.line, column=keyword.column)
+
+    def import_statement(self) -> ImportStmt:
+        keyword = self.previous()
+        if self.match(TokenType.STRING):
+            mod_name = self.previous().literal
+        else:
+            name_tok = self.consume_identifier( "Expected module name to import")
+            mod_name = name_tok.lexeme
+
+        alias: Optional[str] = None
+        if self.match(TokenType.AS):
+            alias_tok = self.consume_identifier( "Expected alias name after 'as'")
+            alias = alias_tok.lexeme
+
+        self.consume_statement_end()
+        return ImportStmt(module_name=mod_name, alias=alias, imported_names=None, line=keyword.line, column=keyword.column)
+
+    def from_import_statement(self) -> ImportStmt:
+        keyword = self.previous()
+        if self.match(TokenType.STRING):
+            mod_name = self.previous().literal
+        else:
+            name_tok = self.consume_identifier( "Expected module name after 'from'")
+            mod_name = name_tok.lexeme
+
+        self.consume(TokenType.IMPORT, "Expected 'import' after module in 'from ... import'")
+        names: List[str] = []
+        name1 = self.consume_identifier( "Expected name to import")
+        names.append(name1.lexeme)
+        while self.match(TokenType.COMMA):
+            n = self.consume_identifier( "Expected name after ','")
+            names.append(n.lexeme)
+
+        self.consume_statement_end()
+        return ImportStmt(module_name=mod_name, alias=None, imported_names=names, line=keyword.line, column=keyword.column)
+
+    def http_statement(self) -> HttpStmt:
+        keyword = self.previous()
+        # 'Send a POST request to "url"...'
+        if self.check_identifier("a") or self.check_identifier("an"):
+            self.advance()
+
+        method_tok = self.consume_identifier( "Expected HTTP method (GET, POST, PUT, DELETE, etc.)")
+        method = method_tok.lexeme.upper()
+
+        self.consume(TokenType.REQUEST, "Expected 'request' after HTTP method")
+        self.consume(TokenType.TO, "Expected 'to' after 'request'")
+        url = self.expression()
+
+        headers: Optional[Expr] = None
+        data: Optional[Expr] = None
+        params: Optional[Expr] = None
+        timeout: Optional[Expr] = None
+        response_var: str = "response"
+
+        # Check for block form or inline form
+        if self.match(TokenType.COLON):
+            # Block form:
+            self.consume(TokenType.NEWLINE, "Expected newline after ':' in HTTP statement")
+            self.consume(TokenType.INDENT, "Expected indented block for HTTP options")
+
+            while not self.check(TokenType.DEDENT) and not self.is_at_end():
+                self.skip_newlines()
+                if self.check(TokenType.DEDENT):
+                    break
+
+                if self.check_identifier("include") or self.check_identifier("with"):
+                    self.advance()
+                if self.check_identifier("send"):
+                    self.advance()
+
+                if self.match(TokenType.HEADERS) or self.check_identifier("headers"):
+                    if not self.previous().type == TokenType.HEADERS:
+                        self.advance()
+                    if self.match(TokenType.COLON, TokenType.EQUAL_SIGN):
+                        pass
+                    headers = self.expression()
+                    self.consume_statement_end()
+                elif self.match(TokenType.DATA) or self.check_identifier("data") or self.check_identifier("body"):
+                    if not self.previous().type == TokenType.DATA:
+                        self.advance()
+                    if self.match(TokenType.COLON, TokenType.EQUAL_SIGN):
+                        pass
+                    data = self.expression()
+                    self.consume_statement_end()
+                elif self.match(TokenType.PARAMS) or self.check_identifier("params"):
+                    if not self.previous().type == TokenType.PARAMS:
+                        self.advance()
+                    if self.match(TokenType.COLON, TokenType.EQUAL_SIGN):
+                        pass
+                    params = self.expression()
+                    self.consume_statement_end()
+                elif self.match(TokenType.TIMEOUT) or self.check_identifier("timeout"):
+                    if not self.previous().type == TokenType.TIMEOUT:
+                        self.advance()
+                    if self.match(TokenType.COLON, TokenType.EQUAL_SIGN):
+                        pass
+                    timeout = self.expression()
+                    self.consume_statement_end()
+                elif self.match(TokenType.SAVE):
+                    if self.check_identifier("the"):
+                        self.advance()
+                    self.consume(TokenType.RESPONSE, "Expected 'response' after 'save'")
+                    self.consume(TokenType.AS, "Expected 'as' after 'response'")
+                    resp_tok = self.consume_identifier( "Expected response variable name")
+                    response_var = resp_tok.lexeme
+                    self.consume_statement_end()
+                else:
+                    raise self.error(self.peek(), f"Unexpected option '{self.peek().lexeme}' in HTTP request block")
+
+            self.consume(TokenType.DEDENT, "Expected dedent after HTTP request block")
+
+        else:
+            # Inline form: e.g. 'Send a GET request to url save response as resp'
+            if self.match(TokenType.SAVE):
+                if self.check_identifier("the"):
+                    self.advance()
+                self.consume(TokenType.RESPONSE, "Expected 'response' after 'save'")
+                self.consume(TokenType.AS, "Expected 'as' after 'response'")
+                resp_tok = self.consume_identifier( "Expected variable name for response")
+                response_var = resp_tok.lexeme
+            self.consume_statement_end()
+
+        return HttpStmt(
+            method=method,
+            url=url,
+            headers=headers,
+            data=data,
+            params=params,
+            timeout=timeout,
+            response_var=response_var,
+            line=keyword.line,
+            column=keyword.column
+        )
+
+    def print_statement(self) -> PrintStmt:
+        keyword = self.previous()
+        exprs: List[Expr] = []
+        if not self.check(TokenType.NEWLINE) and not self.check(TokenType.EOF):
+            exprs.append(self.expression())
+            while self.match(TokenType.COMMA):
+                exprs.append(self.expression())
+        self.consume_statement_end()
+        return PrintStmt(expressions=exprs, line=keyword.line, column=keyword.column)
+
+    def expression_statement(self) -> ExprStmt:
+        expr = self.expression()
+        self.consume_statement_end()
+        return ExprStmt(expression=expr, line=expr.line, column=expr.column)
+
+    def block(self) -> BlockStmt:
+        start_tok = self.previous()
+        self.consume(TokenType.NEWLINE, "Expected newline before block")
+        self.consume(TokenType.INDENT, "Expected indentation for block")
+
+        stmts: List[Stmt] = []
+        while not self.check(TokenType.DEDENT) and not self.is_at_end():
+            self.skip_newlines()
+            if self.check(TokenType.DEDENT):
+                break
+            s = self.statement()
+            if s is not None:
+                stmts.append(s)
+
+        self.consume(TokenType.DEDENT, "Expected dedent at end of block")
+        return BlockStmt(statements=stmts, line=start_tok.line, column=start_tok.column)
+
+    # ========================================================================
+    # Expression Parsing (Precedence Climbing)
+    # ========================================================================
+
+    def expression(self) -> Expr:
+        return self.logic_or()
+
+    def logic_or(self) -> Expr:
+        expr = self.logic_and()
+        while self.match(TokenType.OR):
+            op = self.previous()
+            right = self.logic_and()
+            expr = BinaryExpr(expr, "or", right, op.line, op.column)
+        return expr
+
+    def logic_and(self) -> Expr:
+        expr = self.logic_not()
+        while self.match(TokenType.AND):
+            op = self.previous()
+            right = self.logic_not()
+            expr = BinaryExpr(expr, "and", right, op.line, op.column)
+        return expr
+
+    def logic_not(self) -> Expr:
+        if self.match(TokenType.NOT):
+            op = self.previous()
+            right = self.logic_not()
+            return UnaryExpr("not", right, op.line, op.column)
+        return self.comparison()
+
+    def comparison(self) -> Expr:
+        expr = self.term()
+
+        while True:
+            # Symbol comparisons
+            if self.match(
+                TokenType.EQUAL_EQUAL, TokenType.BANG_EQUAL,
+                TokenType.LESS_THAN, TokenType.LESS_EQUAL,
+                TokenType.GREATER_THAN, TokenType.GREATER_EQUAL
+            ):
+                op = self.previous()
+                right = self.term()
+                expr = BinaryExpr(expr, op.lexeme, right, op.line, op.column)
+                continue
+
+            # English comparisons
+            # 1. 'is equal to' / 'equals' / 'is'
+            if self.match(TokenType.EQUALS):
+                op = self.previous()
+                right = self.term()
+                expr = BinaryExpr(expr, "==", right, op.line, op.column)
+                continue
+
+            if self.match(TokenType.IS):
+                op = self.previous()
+                if self.match(TokenType.NOT):
+                    if self.match(TokenType.EQUAL):
+                        if self.match(TokenType.TO):
+                            pass
+                        right = self.term()
+                        expr = BinaryExpr(expr, "!=", right, op.line, op.column)
+                    elif self.match(TokenType.IN):
+                        right = self.term()
+                        expr = BinaryExpr(expr, "not in", right, op.line, op.column)
+                    else:
+                        right = self.term()
+                        expr = BinaryExpr(expr, "!=", right, op.line, op.column)
+                elif self.match(TokenType.EQUAL):
+                    if self.match(TokenType.TO):
+                        pass
+                    right = self.term()
+                    expr = BinaryExpr(expr, "==", right, op.line, op.column)
+                elif self.match(TokenType.AT):
+                    if self.match(TokenType.LEAST):
+                        right = self.term()
+                        expr = BinaryExpr(expr, ">=", right, op.line, op.column)
+                    elif self.match(TokenType.MOST):
+                        right = self.term()
+                        expr = BinaryExpr(expr, "<=", right, op.line, op.column)
+                    else:
+                        raise self.error(self.peek(), "Expected 'least' or 'most' after 'is at'")
+                elif self.match(TokenType.GREATER):
+                    if self.match(TokenType.THAN):
+                        if self.match(TokenType.OR):
+                            self.consume(TokenType.EQUAL, "Expected 'equal' after 'is greater than or'")
+                            if self.match(TokenType.TO):
+                                pass
+                            right = self.term()
+                            expr = BinaryExpr(expr, ">=", right, op.line, op.column)
+                        else:
+                            right = self.term()
+                            expr = BinaryExpr(expr, ">", right, op.line, op.column)
+                    else:
+                        raise self.error(self.peek(), "Expected 'than' after 'is greater'")
+                elif self.match(TokenType.LESS):
+                    if self.match(TokenType.THAN):
+                        if self.match(TokenType.OR):
+                            self.consume(TokenType.EQUAL, "Expected 'equal' after 'is less than or'")
+                            if self.match(TokenType.TO):
+                                pass
+                            right = self.term()
+                            expr = BinaryExpr(expr, "<=", right, op.line, op.column)
+                        else:
+                            right = self.term()
+                            expr = BinaryExpr(expr, "<", right, op.line, op.column)
+                    else:
+                        raise self.error(self.peek(), "Expected 'than' after 'is less'")
+                elif self.match(TokenType.IN):
+                    right = self.term()
+                    expr = BinaryExpr(expr, "in", right, op.line, op.column)
+                else:
+                    # 'x is y' -> 'x == y'
+                    right = self.term()
+                    expr = BinaryExpr(expr, "==", right, op.line, op.column)
+                continue
+
+            if self.match(TokenType.NOT):
+                op = self.previous()
+                if self.match(TokenType.IN):
+                    right = self.term()
+                    expr = BinaryExpr(expr, "not in", right, op.line, op.column)
+                    continue
+                else:
+                    self.current -= 1
+
+            if self.match(TokenType.IN):
+                op = self.previous()
+                right = self.term()
+                expr = BinaryExpr(expr, "in", right, op.line, op.column)
+                continue
+
+            break
+
+        return expr
+
+    def term(self) -> Expr:
+        expr = self.factor()
+        while self.match(TokenType.PLUS, TokenType.MINUS):
+            op = self.previous()
+            right = self.factor()
+            expr = BinaryExpr(expr, op.lexeme, right, op.line, op.column)
+        return expr
+
+    def factor(self) -> Expr:
+        expr = self.unary()
+        while self.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
+            op = self.previous()
+            right = self.unary()
+            expr = BinaryExpr(expr, op.lexeme, right, op.line, op.column)
+        return expr
+
+    def unary(self) -> Expr:
+        if self.match(TokenType.MINUS, TokenType.PLUS):
+            op = self.previous()
+            right = self.unary()
+            return UnaryExpr(op.lexeme, right, op.line, op.column)
+
+        if self.match(TokenType.WAIT):
+            op = self.previous()
+            if self.check_identifier("for"):
+                self.advance()
+            right = self.unary()
+            return UnaryExpr("await", right, op.line, op.column)
+
+        if self.check_identifier("await"):
+            op = self.advance()
+            right = self.unary()
+            return UnaryExpr("await", right, op.line, op.column)
+
+        return self.call_or_access()
+
+    def call_or_access(self) -> Expr:
+        expr = self.primary()
+
+        while True:
+            if self.match(TokenType.LPAREN):
+                # Function call: f(a, b)
+                args: List[Expr] = []
+                if not self.check(TokenType.RPAREN):
+                    args.append(self.expression())
+                    while self.match(TokenType.COMMA):
+                        args.append(self.expression())
+                close_paren = self.consume(TokenType.RPAREN, "Expected ')' after arguments")
+                expr = CallExpr(expr, args, expr.line, expr.column)
+
+            elif self.match(TokenType.DOT):
+                # Property access: obj.member
+                name_tok = self.consume_identifier( "Expected property name after '.'")
+                expr = MemberAccessExpr(expr, name_tok.lexeme, name_tok.line, name_tok.column)
+
+            elif self.match(TokenType.LBRACKET):
+                # Index access: obj[idx]
+                index_expr = self.expression()
+                self.consume(TokenType.RBRACKET, "Expected ']' after index")
+                expr = IndexAccessExpr(expr, index_expr, expr.line, expr.column)
+
+            else:
+                break
+
+        return expr
+
+    def primary(self) -> Expr:
+        # Number literal
+        if self.match(TokenType.INT, TokenType.FLOAT):
+            tok = self.previous()
+            return LiteralExpr(tok.literal, tok.line, tok.column)
+
+        # String literal (supports string interpolation if contains '{')
+        if self.match(TokenType.STRING):
+            tok = self.previous()
+            return self.parse_string_with_interpolation(tok)
+
+        # Booleans and Nil
+        if self.match(TokenType.TRUE):
+            tok = self.previous()
+            return LiteralExpr(True, tok.line, tok.column)
+
+        if self.match(TokenType.FALSE):
+            tok = self.previous()
+            return LiteralExpr(False, tok.line, tok.column)
+
+        if self.match(TokenType.NIL):
+            tok = self.previous()
+            return LiteralExpr(None, tok.line, tok.column)
+
+        # Ask expression: Ask "Enter your name: "
+        if self.match(TokenType.ASK):
+            tok = self.previous()
+            prompt_expr: Optional[Expr] = None
+            if not self.check(TokenType.NEWLINE) and not self.check(TokenType.COMMA) and not self.check(TokenType.RPAREN) and not self.is_at_end():
+                if self.check(TokenType.STRING):
+                    prompt_expr = self.expression()
+            return AskExpr(prompt=prompt_expr, line=tok.line, column=tok.column)
+
+        # Conditional expression: if <cond>: <then_expr> otherwise: <else_expr>
+        if self.match(TokenType.IF):
+            tok = self.previous()
+            cond = self.expression()
+            if self.match(TokenType.COLON):
+                pass
+            elif self.check_identifier("then"):
+                self.advance()
+            true_expr = self.expression()
+            if not self.match(TokenType.OTHERWISE, TokenType.ELSE):
+                raise self.error(self.peek(), "Expected 'otherwise' or 'else' in conditional expression")
+            if self.match(TokenType.COLON):
+                pass
+            false_expr = self.expression()
+            return ConditionalExpr(cond, true_expr, false_expr, tok.line, tok.column)
+
+        # List literal: [a, b, c]
+        if self.match(TokenType.LBRACKET):
+            tok = self.previous()
+            elements: List[Expr] = []
+            if not self.check(TokenType.RBRACKET):
+                elements.append(self.expression())
+                while self.match(TokenType.COMMA):
+                    self.skip_newlines()
+                    if self.check(TokenType.RBRACKET):
+                        break
+                    elements.append(self.expression())
+            self.consume(TokenType.RBRACKET, "Expected ']' at end of list")
+            return ListExpr(elements, tok.line, tok.column)
+
+        # Dictionary / Object literal: {"k": v, a = b}
+        if self.match(TokenType.LBRACE):
+            tok = self.previous()
+            entries: List[Tuple[Expr, Expr]] = []
+            if not self.check(TokenType.RBRACE):
+                entries.append(self.map_entry())
+                while self.match(TokenType.COMMA):
+                    self.skip_newlines()
+                    if self.check(TokenType.RBRACE):
+                        break
+                    entries.append(self.map_entry())
+            self.consume(TokenType.RBRACE, "Expected '}' at end of object")
+            return MapExpr(entries, tok.line, tok.column)
+
+        # Identifier
+        if self.is_identifier_like(self.peek()):
+            tok = self.advance()
+            return VariableExpr(tok.lexeme, tok.line, tok.column)
+
+        # Grouping: (expr)
+        if self.match(TokenType.LPAREN):
+            expr = self.expression()
+            self.consume(TokenType.RPAREN, "Expected ')' after expression")
+            return expr
+
+        raise self.error(self.peek(), f"Expected expression, found '{self.peek().lexeme}'")
+
+    def map_entry(self) -> Tuple[Expr, Expr]:
+        self.skip_newlines()
+        if self.match(TokenType.STRING):
+            key = LiteralExpr(self.previous().literal, self.previous().line, self.previous().column)
+        elif self.match(TokenType.IDENTIFIER):
+            # treat identifier as string key
+            tok = self.previous()
+            key = LiteralExpr(tok.lexeme, tok.line, tok.column)
+        else:
+            key = self.expression()
+
+        if not self.match(TokenType.COLON, TokenType.EQUAL_SIGN, TokenType.TO):
+            raise self.error(self.peek(), "Expected ':' or '=' between key and value in object literal")
+
+        value = self.expression()
+        return (key, value)
+
+    def parse_string_with_interpolation(self, token: Token) -> Expr:
+        val: str = token.literal
+        if "{" not in val:
+            return LiteralExpr(val, token.line, token.column)
+
+        # Parse string interpolation: e.g. "Hello {name}, your score is {score * 2}!"
+        parts: List[Union[str, Expr]] = []
+        pattern = re.compile(r"\{([^}]+)\}")
+        last_end = 0
+
+        for match in pattern.finditer(val):
+            start, end = match.span()
+            if start > last_end:
+                parts.append(val[last_end:start])
+            expr_code = match.group(1).strip()
+            # Lex and parse inner expression
+            from .lexer import Lexer
+            sub_lexer = Lexer(expr_code, filename=self.filename)
+            sub_tokens = sub_lexer.tokenize()
+            sub_parser = Parser(sub_tokens, filename=self.filename, source=self.source)
+            inner_expr = sub_parser.expression()
+            parts.append(inner_expr)
+            last_end = end
+
+        if last_end < len(val):
+            parts.append(val[last_end:])
+
+        return StringInterpolationExpr(parts, token.line, token.column)
+
+    # ========================================================================
+    # Helpers
+    # ========================================================================
+
+    def check_identifier(self, name: str) -> bool:
+        if self.is_at_end():
+            return False
+        tok = self.peek()
+        return tok.type == TokenType.IDENTIFIER and tok.lexeme.lower() == name.lower()
+
+    def match(self, *types: TokenType) -> bool:
+        for t in types:
+            if self.check(t):
+                self.advance()
+                return True
+        return False
+
+    def check(self, token_type: TokenType) -> bool:
+        if self.is_at_end():
+            return False
+        return self.peek().type == token_type
+
+    def check_next(self, token_type: TokenType) -> bool:
+        if self.current + 1 >= len(self.tokens):
+            return False
+        return self.tokens[self.current + 1].type == token_type
+
+    def advance(self) -> Token:
+        if not self.is_at_end():
+            self.current += 1
+        return self.previous()
+
+    def is_at_end(self) -> bool:
+        return self.peek().type == TokenType.EOF
+
+    def peek(self) -> Token:
+        return self.tokens[self.current]
+
+    def previous(self) -> Token:
+        return self.tokens[self.current - 1]
+
+    def consume(self, token_type: TokenType, message: str) -> Token:
+        if self.check(token_type):
+            return self.advance()
+        raise self.error(self.peek(), message)
+
+    def consume_statement_end(self) -> None:
+        if self.match(TokenType.NEWLINE, TokenType.EOF):
+            return
+        if self.check(TokenType.DEDENT):
+            return
+        raise self.error(self.peek(), f"Expected end of line or statement, found '{self.peek().lexeme}'")
+
+    def skip_newlines(self) -> None:
+        while self.match(TokenType.NEWLINE):
+            pass
+
+    def error(self, token: Token, message: str) -> ParseError:
+        return ParseError(
+            message=message,
+            line=token.line,
+            column=token.column,
+            length=token.length,
+            filename=self.filename,
+            source=self.source
+        )

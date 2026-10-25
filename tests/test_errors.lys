@@ -1,0 +1,33 @@
+# Unit tests: Error Handling
+
+Set caught to false
+Set finally_ran to false
+
+Try:
+    Raise error "Expected error signal"
+Catch error as err:
+    Set caught to true
+Finally:
+    Set finally_ran to true
+
+Assert(caught is equal to true, "Catch block executed")
+Assert(finally_ran is equal to true, "Finally block executed")
+
+# Ensure nested errors work
+Create a function called risky_op with fail:
+    If fail:
+        Raise error "Failed explicitly"
+    Return "OK"
+
+Set op_result to "initial"
+Try:
+    Set op_result to risky_op(false)
+Catch:
+    Set op_result to "caught"
+Assert(op_result is equal to "OK", "Safe operation success")
+
+Try:
+    Set op_result to risky_op(true)
+Catch:
+    Set op_result to "caught"
+Assert(op_result is equal to "caught", "Risky operation caught")

@@ -1,0 +1,36 @@
+# Unit tests: Collections (Lists and Objects)
+
+Set lst to [10, 20, 30]
+Assert(lst.length is equal to 3, "List length property")
+Assert(lst[0] is equal to 10, "List index 0")
+Assert(lst[1] is equal to 20, "List index 1")
+Assert(lst[-1] is equal to 30, "Negative index")
+
+append(lst, 40)
+Assert(lst.length is equal to 4, "Appended list length")
+Assert(lst[3] is equal to 40, "Appended item")
+
+Set popped to pop(lst)
+Assert(popped is equal to 40, "Popped item")
+Assert(lst.length is equal to 3, "Length after pop")
+
+# Dictionary / Object tests
+Set user to {
+    "name": "Alex",
+    "age": 28,
+    "active": true
+}
+
+Assert(user.name is equal to "Alex", "Property dot access")
+Assert(user["age"] is equal to 28, "Property bracket access")
+Assert(user.active is equal to true, "Boolean property")
+
+Set user.role to "Engineer"
+Assert(user.role is equal to "Engineer", "New property assignment")
+
+Set user.age to 29
+Assert(user.age is equal to 29, "Property reassignment")
+
+Assert("name" in user, "Membership in dictionary")
+Assert(20 in lst, "Membership in list")
+Assert(99 not in lst, "Non-membership in list")

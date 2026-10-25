@@ -1,0 +1,54 @@
+# Unit tests: Control Flow & Loops
+
+Set val to 50
+Set result to "none"
+
+If val > 100:
+    Set result to "high"
+Otherwise if val is at least 50:
+    Set result to "medium"
+Otherwise:
+    Set result to "low"
+
+Assert(result is equal to "medium", "If-otherwise branch evaluation")
+
+# Test While Loop
+Set count to 0
+Set sum to 0
+While count < 5:
+    Increase count by 1
+    Increase sum by count
+
+Assert(count is equal to 5, "While loop count")
+Assert(sum is equal to 15, "While loop sum")
+
+# Test Repeat Loop
+Set repeat_counter to 0
+Repeat 4 times:
+    Increase repeat_counter by 1
+
+Assert(repeat_counter is equal to 4, "Repeat loop count")
+
+# Test For-in Loop
+Set numbers to [1, 2, 3, 4]
+Set for_sum to 0
+For each n in numbers:
+    Increase for_sum by n
+
+Assert(for_sum is equal to 10, "For-in loop sum")
+
+# Test Break & Continue
+Set idx to 0
+Set seen to []
+While idx < 10:
+    Increase idx by 1
+    If idx is equal to 2:
+        Continue to next iteration
+    If idx is equal to 5:
+        Break out of loop
+    append(seen, idx)
+
+Assert(seen.length is equal to 3, "Break/continue count")
+Assert(seen[0] is equal to 1, "First item")
+Assert(seen[1] is equal to 3, "Skipped 2")
+Assert(seen[2] is equal to 4, "Stopped before 5")

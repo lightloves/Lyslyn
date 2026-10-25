@@ -1,0 +1,51 @@
+# ==============================================================================
+# Example 04: Collections (Lists & Objects/Maps)
+# ==============================================================================
+
+# Lists
+Set fruits to ["Apple", "Banana", "Cherry"]
+Print "Original list:", fruits
+Print "First fruit:", fruits[0]
+Print "Last fruit:", fruits[-1]
+
+# Appending to lists
+append(fruits, "Dragonfruit")
+Print "After append:", fruits
+Print "Fruit count:", fruits.length
+
+# Dictionaries / Objects
+Set user to {
+    "name": "Raj",
+    "role": "Lead Architect",
+    "experience_years": 8,
+    "skills": ["Language Design", "Compilers", "Distributed Systems"]
+}
+
+Print "User name:", user.name
+Print "User role:", user["role"]
+Print "Primary skill:", user.skills[0]
+
+# Modifying object properties
+Set user.role to "Principal Language Engineer"
+Set user["status"] to "Active"
+
+Print "\nUpdated User Info:"
+Print "  Name:", user.name
+Print "  Role:", user.role
+Print "  Status:", user.status
+Print "  Keys in user object:", user.keys()
+
+# List of Objects
+Set team to [
+    {"name": "Alice", "score": 92},
+    {"name": "Bob", "score": 88},
+    {"name": "Charlie", "score": 95}
+]
+
+Set total_score to 0
+For each member in team:
+    Print "Team member {member.name} scored {member.score}"
+    Increase total_score by member.score
+
+Set average_score to total_score / team.length
+Print "\nTeam average score:", average_score
