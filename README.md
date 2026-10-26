@@ -28,6 +28,48 @@
 
 ---
 
+## 📖 Coding in Pure Simple English
+
+Lyslyn is engineered so that **every program reads like clear, structured English prose**, eliminating cryptic symbols and bracket fatigue:
+
+```lys
+# Simple English Collections & Variables
+Set languages to a list of "Lyslyn", "Python" and "Rust"
+Add "SQL" to languages
+
+Set profile to an object with:
+    username: "Raj"
+    role: "Architect"
+    age: 21
+
+# Natural English Conditionals
+If profile.age is at least 18:
+    Display "Welcome, adult user!"
+
+If languages is not empty:
+    Display "Active languages:", languages
+
+If profile.age is odd:
+    Display "Age is an odd number."
+
+# Natural English Loops
+For every lang in languages:
+    If lang is equal to "Lyslyn":
+        Display "Found primary language!"
+        Stop the loop
+
+Do 3 times:
+    Display "Lyslyn makes coding simple English!"
+
+# Natural English Functions & Returns
+Create a function called greet with name and role:
+    Give back "Hello " + name + " (" + role + ")"
+
+Call greet with "Raj" and "Architect"
+```
+
+---
+
 ## 🚀 30-Second Example: A Complete REST API
 
 ```lys

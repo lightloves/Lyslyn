@@ -1,0 +1,88 @@
+# Test Suite: Comprehensive Pure Simple English Syntax
+Print "Testing Pure Simple English Syntax..."
+
+# 1. Simple English Lists
+Set colors to a list of "red", "green" and "blue"
+Assert Length(colors) == 3, "Colors length should be 3"
+Assert colors[0] == "red", "First color should be red"
+
+Add "yellow" to colors
+Assert Length(colors) == 4, "Colors length should be 4 after Add"
+Assert colors[3] == "yellow", "Appended color should be yellow"
+
+Set empty_box to an empty list
+Assert empty_box is empty, "empty_box should be empty"
+Assert Length(empty_box) == 0, "Length of empty_box should be 0"
+
+# 2. Simple English Objects
+Set car to an object with:
+    make: "Tesla"
+    model: "Model S"
+    year: 2024
+    electric: true
+
+Assert car.make == "Tesla", "Car make"
+Assert car.year == 2024, "Car year"
+Assert car.electric is true, "Car electric"
+
+Set config to an empty object
+Assert Keys(config) is empty, "Config keys should be empty"
+
+# 3. Simple English Natural Comparisons
+Set balance to 500
+Assert balance is positive, "Balance should be positive"
+Assert balance is not negative, "Balance should not be negative"
+
+Set debt to - 50
+Assert debt is negative, "Debt should be negative"
+
+Set zero_val to 0
+Assert zero_val is zero, "Zero should be zero"
+
+Set even_num to 42
+Assert even_num is even, "42 should be even"
+Assert even_num is not odd, "42 should not be odd"
+
+Set odd_num to 17
+Assert odd_num is odd, "17 should be odd"
+
+Set missing_val to nothing
+Assert missing_val is nothing, "missing_val should be nothing"
+
+Set present_val to "Hello"
+Assert present_val is something, "present_val should be something"
+
+# 4. Simple English Loops & Control
+Set counter to 0
+Do 5 times:
+    Increase counter by 1
+Assert counter == 5, "Repeat counter should be 5"
+
+Set found_blue to false
+For every c in colors:
+    If c is equal to "blue":
+        Set found_blue to true
+        Stop the loop
+Assert found_blue is true, "Should have stopped after finding blue"
+
+# 5. Simple English Functions & Returns
+Create a function called multiply with a and b:
+    Give back a * b
+
+Set prod to multiply(6, 7)
+Assert prod == 42, "6 * 7 should be 42"
+
+Create a function called void_fn:
+    Return nothing
+
+Assert void_fn() is nothing, "Void fn should return nothing"
+
+# 6. Simple English Function Invocation
+Set called_val to 0
+Create a function called record_val with v:
+    Set called_val to v
+
+Call record_val with 99
+Assert called_val == 99, "Call record_val should set called_val to 99"
+
+Print "All Simple English language tests passed successfully!"

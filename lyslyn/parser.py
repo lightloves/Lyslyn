@@ -120,6 +120,22 @@ class Parser:
         if self.match(TokenType.REPEAT):
             return self.repeat_statement()
 
+        # 'Do this 5 times:' or 'Do 5 times:'
+        if self.check_identifier("do"):
+            start_pos = self.current
+            do_tok = self.advance()
+            if self.check_identifier("this"):
+                self.advance()
+            try:
+                count = self.expression()
+                if self.match(TokenType.TIMES) or self.check_identifier("times"):
+                    self.consume(TokenType.COLON, "Expected ':' after repeat statement")
+                    body = self.block()
+                    return RepeatStmt(count=count, body=body, line=do_tok.line, column=do_tok.column)
+            except Exception:
+                pass
+            self.current = start_pos
+
         # Functions
         if self.match(TokenType.ASYNC):
             return self.function_statement(is_async=True)
@@ -128,7 +144,13 @@ class Parser:
             return self.function_statement(is_async=False)
 
         if self.match(TokenType.DEFINE):
-            if self.match(TokenType.FUNCTION):
+            if self.check_identifier("a") or self.check_identifier("an"):
+                self.advance()
+            if self.match(TokenType.FUNCTION) or self.check_identifier("function"):
+                if self.previous().type != TokenType.FUNCTION:
+                    self.advance()
+                if self.match(TokenType.CALLED) or self.check_identifier("called"):
+                    pass
                 return self.function_statement(is_async=False)
             raise self.error(self.previous(), "Expected 'function' or 'constant' after 'define'")
 
@@ -137,19 +159,50 @@ class Parser:
             if self.check_identifier("a") or self.check_identifier("an"):
                 self.advance()
             self.consume(TokenType.FUNCTION, "Expected 'function' after 'create'")
-            if self.match(TokenType.CALLED):
+            if self.match(TokenType.CALLED) or self.check_identifier("called"):
                 pass
             return self.function_statement(is_async=False)
 
-        # Return, Break, Continue
+        # Return, Give back
         if self.match(TokenType.RETURN):
             return self.return_statement()
 
+        if self.check_identifier("give"):
+            give_tok = self.advance()
+            if self.check_identifier("back"):
+                self.advance()
+                val = None
+                if not self.check(TokenType.NEWLINE) and not self.check(TokenType.EOF):
+                    val = self.expression()
+                self.consume_statement_end()
+                return ReturnStmt(value=val, line=give_tok.line, column=give_tok.column)
+            self.current -= 1
+
+        # Break, Stop the loop
         if self.match(TokenType.BREAK):
             return self.break_statement()
 
+        if self.check_identifier("stop"):
+            stop_tok = self.advance()
+            if self.check_identifier("the"):
+                self.advance()
+            if self.check_identifier("loop"):
+                self.advance()
+            self.consume_statement_end()
+            return BreakStmt(line=stop_tok.line, column=stop_tok.column)
+
+        # Continue, Skip to next
         if self.match(TokenType.CONTINUE):
             return self.continue_statement()
+
+        if self.check_identifier("skip"):
+            skip_tok = self.advance()
+            if self.check_identifier("to"):
+                self.advance()
+            if self.check_identifier("next"):
+                self.advance()
+            self.consume_statement_end()
+            return ContinueStmt(line=skip_tok.line, column=skip_tok.column)
 
         # Error Handling
         if self.match(TokenType.TRY):
@@ -185,43 +238,61 @@ class Parser:
         if self.match(TokenType.VALIDATE):
             return self.validate_statement()
 
-        # I/O
-        if self.match(TokenType.PRINT):
+        # I/O: Print / Display / Show
+        if self.match(TokenType.PRINT) or self.check_identifier("display") or self.check_identifier("show"):
+            if self.previous().type != TokenType.PRINT:
+                self.advance()
             return self.print_statement()
+
+        # Ask: 'Ask "Enter name: " and save as username'
+        if self.match(TokenType.ASK):
+            ask_tok = self.previous()
+            prompt_expr = None
+            if self.check(TokenType.STRING):
+                prompt_expr = self.expression()
+            if self.match(TokenType.AND) or self.check_identifier("and"):
+                pass
+            if self.match(TokenType.SAVE) or self.check_identifier("save"):
+                pass
+            if self.match(TokenType.AS) or self.match(TokenType.TO) or self.check_identifier("as") or self.check_identifier("to"):
+                pass
+            var_tok = self.consume_identifier("Expected variable name to save input as")
+            self.consume_statement_end()
+            ask_call = AskExpr(prompt_expr, ask_tok.line, ask_tok.column)
+            return SetStmt(target=VariableExpr(var_tok.lexeme, var_tok.line, var_tok.column), value=ask_call, is_constant=False, line=ask_tok.line, column=ask_tok.column)
+
+        # List operation: 'Add "item" to items' / 'Append "item" to items'
+        if self.check_identifier("add") or self.check_identifier("append"):
+            start_pos = self.current
+            kw = self.advance()
+            try:
+                val = self.expression()
+                if self.match(TokenType.TO) or self.check_identifier("to"):
+                    target_tok = self.consume_identifier("Expected variable name to add to")
+                    target = VariableExpr(target_tok.lexeme, target_tok.line, target_tok.column)
+                    self.consume_statement_end()
+                    append_call = CallExpr(VariableExpr("append", kw.line, kw.column), [target, val], kw.line, kw.column)
+                    return ExprStmt(append_call, kw.line, kw.column)
+            except Exception:
+                pass
+            self.current = start_pos  # backtrack if not matching pattern
 
         # Assertion
         if self.match(TokenType.ASSERT):
             return self.assert_statement()
 
-        # Run / Call statement: 'Run greet with "Raj"'
-        if self.check_identifier("run"):
+        # Run / Call / Execute: 'Run greet with "Raj"' or 'Call greet with "Raj" and 25'
+        if self.check_identifier("run") or self.check_identifier("call") or self.check_identifier("execute"):
             run_tok = self.advance()
-            callee_name = self.consume_identifier( "Expected function name after 'run'")
+            callee_name = self.consume_identifier("Expected function name")
             callee = VariableExpr(callee_name.lexeme, callee_name.line, callee_name.column)
             args: List[Expr] = []
-            if self.match(TokenType.WITH):
-                args.append(self.expression())
-                while self.match(TokenType.COMMA):
-                    args.append(self.expression())
+            if self.match(TokenType.WITH) or self.check_identifier("with"):
+                args.append(self.comparison())
+                while self.match(TokenType.COMMA) or self.match(TokenType.AND):
+                    args.append(self.comparison())
             self.consume_statement_end()
             return ExprStmt(CallExpr(callee, args, run_tok.line, run_tok.column), run_tok.line, run_tok.column)
-
-        if self.check_identifier("call"):
-            call_tok = self.advance()
-            callee = self.primary()
-            args = []
-            if self.match(TokenType.LPAREN):
-                if not self.check(TokenType.RPAREN):
-                    args.append(self.expression())
-                    while self.match(TokenType.COMMA):
-                        args.append(self.expression())
-                self.consume(TokenType.RPAREN, "Expected ')' after call arguments")
-            elif self.match(TokenType.WITH):
-                args.append(self.expression())
-                while self.match(TokenType.COMMA):
-                    args.append(self.expression())
-            self.consume_statement_end()
-            return ExprStmt(CallExpr(callee, args, call_tok.line, call_tok.column), call_tok.line, call_tok.column)
 
         # Expression statement
         return self.expression_statement()
@@ -308,8 +379,9 @@ class Parser:
 
     def for_statement(self) -> ForStmt:
         keyword = self.previous()
-        if self.match(TokenType.EACH):
-            pass
+        if self.match(TokenType.EACH) or self.check_identifier("each") or self.check_identifier("every"):
+            if self.previous().type != TokenType.EACH:
+                self.advance()
         var_tok = self.consume_identifier( "Expected variable name in for loop")
         self.consume(TokenType.IN, "Expected 'in' after for loop variable")
         iterable = self.expression()
@@ -358,9 +430,13 @@ class Parser:
 
     def return_statement(self) -> ReturnStmt:
         keyword = self.previous()
+        if self.check_identifier("back"):
+            self.advance()
         value: Optional[Expr] = None
         if not self.check(TokenType.NEWLINE) and not self.check(TokenType.EOF):
-            if self.match(TokenType.NIL):
+            if self.match(TokenType.NIL) or self.check_identifier("nothing"):
+                if self.previous().type != TokenType.NIL:
+                    self.advance()
                 value = LiteralExpr(None, keyword.line, keyword.column)
             else:
                 value = self.expression()
@@ -835,17 +911,115 @@ class Parser:
             if self.match(TokenType.IS):
                 op = self.previous()
                 if self.match(TokenType.NOT):
+                    if self.check_identifier("empty"):
+                        self.advance()
+                        len_call = CallExpr(VariableExpr("Length", op.line, op.column), [expr], op.line, op.column)
+                        expr = BinaryExpr(len_call, ">", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                        continue
+                    if self.check_identifier("negative"):
+                        self.advance()
+                        expr = BinaryExpr(expr, ">=", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                        continue
+                    if self.check_identifier("positive"):
+                        self.advance()
+                        expr = BinaryExpr(expr, "<=", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                        continue
+                    if self.check_identifier("zero"):
+                        self.advance()
+                        expr = BinaryExpr(expr, "!=", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                        continue
+                    if self.check_identifier("even"):
+                        self.advance()
+                        mod_expr = BinaryExpr(expr, "%", LiteralExpr(2, op.line, op.column), op.line, op.column)
+                        expr = BinaryExpr(mod_expr, "!=", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                        continue
+                    if self.check_identifier("odd"):
+                        self.advance()
+                        mod_expr = BinaryExpr(expr, "%", LiteralExpr(2, op.line, op.column), op.line, op.column)
+                        expr = BinaryExpr(mod_expr, "==", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                        continue
+                    if self.match(TokenType.NIL) or self.check_identifier("nothing") or self.check_identifier("null"):
+                        if self.previous().type != TokenType.NIL:
+                            self.advance()
+                        expr = BinaryExpr(expr, "!=", LiteralExpr(None, op.line, op.column), op.line, op.column)
+                        continue
                     if self.match(TokenType.EQUAL):
                         if self.match(TokenType.TO):
                             pass
                         right = self.term()
                         expr = BinaryExpr(expr, "!=", right, op.line, op.column)
+                        continue
                     elif self.match(TokenType.IN):
                         right = self.term()
                         expr = BinaryExpr(expr, "not in", right, op.line, op.column)
+                        continue
                     else:
                         right = self.term()
                         expr = BinaryExpr(expr, "!=", right, op.line, op.column)
+                        continue
+
+                # 'is empty'
+                if self.check_identifier("empty"):
+                    self.advance()
+                    len_call = CallExpr(VariableExpr("Length", op.line, op.column), [expr], op.line, op.column)
+                    expr = BinaryExpr(len_call, "==", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is positive'
+                if self.check_identifier("positive"):
+                    self.advance()
+                    expr = BinaryExpr(expr, ">", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is negative'
+                if self.check_identifier("negative"):
+                    self.advance()
+                    expr = BinaryExpr(expr, "<", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is zero'
+                if self.check_identifier("zero"):
+                    self.advance()
+                    expr = BinaryExpr(expr, "==", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is even'
+                if self.check_identifier("even"):
+                    self.advance()
+                    mod_expr = BinaryExpr(expr, "%", LiteralExpr(2, op.line, op.column), op.line, op.column)
+                    expr = BinaryExpr(mod_expr, "==", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is odd'
+                if self.check_identifier("odd"):
+                    self.advance()
+                    mod_expr = BinaryExpr(expr, "%", LiteralExpr(2, op.line, op.column), op.line, op.column)
+                    expr = BinaryExpr(mod_expr, "!=", LiteralExpr(0, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is something'
+                if self.check_identifier("something"):
+                    self.advance()
+                    expr = BinaryExpr(expr, "!=", LiteralExpr(None, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is nothing' / 'is nil'
+                if self.match(TokenType.NIL) or self.check_identifier("nothing") or self.check_identifier("null"):
+                    if self.previous().type != TokenType.NIL:
+                        self.advance()
+                    expr = BinaryExpr(expr, "==", LiteralExpr(None, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is true'
+                if self.match(TokenType.TRUE):
+                    expr = BinaryExpr(expr, "==", LiteralExpr(True, op.line, op.column), op.line, op.column)
+                    continue
+
+                # 'is false'
+                if self.match(TokenType.FALSE):
+                    expr = BinaryExpr(expr, "==", LiteralExpr(False, op.line, op.column), op.line, op.column)
+                    continue
+
                 elif self.match(TokenType.EQUAL):
                     if self.match(TokenType.TO):
                         pass
@@ -1022,6 +1196,56 @@ class Parser:
             false_expr = self.expression()
             return ConditionalExpr(cond, true_expr, false_expr, tok.line, tok.column)
 
+        # Natural English list literal: a list of a, b, c OR a list containing a, b, c
+        if self.check_identifier("a") and (self.check_next_identifier("list") or self.check_next_identifier("collection")):
+            tok = self.advance()  # 'a'
+            self.advance()        # 'list'
+            elements: List[Expr] = []
+            if self.check_identifier("of") or self.check_identifier("containing") or self.check_identifier("with"):
+                self.advance()
+                elements.append(self.comparison())
+                while self.match(TokenType.COMMA) or self.match(TokenType.AND):
+                    self.skip_newlines()
+                    elements.append(self.comparison())
+            return ListExpr(elements, tok.line, tok.column)
+
+        # Natural English empty list / empty object
+        if self.check_identifier("an") and self.check_next_identifier("empty"):
+            tok = self.advance()  # 'an'
+            self.advance()        # 'empty'
+            if self.check_identifier("list") or self.check_identifier("array") or self.check_identifier("collection"):
+                self.advance()
+                return ListExpr([], tok.line, tok.column)
+            if self.check_identifier("object") or self.check_identifier("map") or self.check_identifier("dictionary"):
+                self.advance()
+                return MapExpr([], tok.line, tok.column)
+
+        # Natural English object literal: an object with name = "Raj", age = 20
+        if self.check_identifier("an") and (self.check_next_identifier("object") or self.check_next_identifier("dictionary") or self.check_next_identifier("map")):
+            tok = self.advance()  # 'an'
+            self.advance()        # 'object'
+            entries: List[Tuple[Expr, Expr]] = []
+            if self.match(TokenType.WITH) or self.check_identifier("with"):
+                pass  # optional 'with'
+            if self.match(TokenType.COLON):
+                self.skip_newlines()
+                self.consume(TokenType.INDENT, "Expected indentation for object")
+                while not self.check(TokenType.DEDENT) and not self.is_at_end():
+                    self.skip_newlines()
+                    if self.check(TokenType.DEDENT):
+                        break
+                    entries.append(self.map_entry())
+                    self.match(TokenType.COMMA)
+                    self.skip_newlines()
+                self.consume(TokenType.DEDENT, "Expected dedent after object")
+                return MapExpr(entries, tok.line, tok.column)
+            else:
+                entries.append(self.map_entry())
+                while self.match(TokenType.COMMA) or self.match(TokenType.AND):
+                    self.skip_newlines()
+                    entries.append(self.map_entry())
+                return MapExpr(entries, tok.line, tok.column)
+
         # List literal: [a, b, c]
         if self.match(TokenType.LBRACKET):
             tok = self.previous()
@@ -1077,7 +1301,7 @@ class Parser:
         if not self.match(TokenType.COLON, TokenType.EQUAL_SIGN, TokenType.TO):
             raise self.error(self.peek(), "Expected ':' or '=' between key and value in object literal")
 
-        value = self.expression()
+        value = self.comparison()
         return (key, value)
 
     def parse_string_with_interpolation(self, token: Token) -> Expr:
@@ -1117,7 +1341,13 @@ class Parser:
         if self.is_at_end():
             return False
         tok = self.peek()
-        return tok.type == TokenType.IDENTIFIER and tok.lexeme.lower() == name.lower()
+        return (tok.type in CONTEXTUAL_IDENTIFIER_TYPES or tok.type == TokenType.IDENTIFIER or bool(tok.lexeme and tok.lexeme.isidentifier())) and tok.lexeme.lower() == name.lower()
+
+    def check_next_identifier(self, name: str) -> bool:
+        if self.current + 1 >= len(self.tokens):
+            return False
+        tok = self.tokens[self.current + 1]
+        return (tok.type in CONTEXTUAL_IDENTIFIER_TYPES or tok.type == TokenType.IDENTIFIER or bool(tok.lexeme and tok.lexeme.isidentifier())) and tok.lexeme.lower() == name.lower()
 
     def match(self, *types: TokenType) -> bool:
         for t in types:
@@ -1159,6 +1389,8 @@ class Parser:
         if self.match(TokenType.NEWLINE, TokenType.EOF):
             return
         if self.check(TokenType.DEDENT):
+            return
+        if self.previous().type in (TokenType.DEDENT, TokenType.NEWLINE):
             return
         raise self.error(self.peek(), f"Expected end of line or statement, found '{self.peek().lexeme}'")
 

@@ -87,7 +87,82 @@ Serve HTTP on port 8080:
 
 Run the server:
 ```bash
-lyslyn run api.lys
+lys api.lys
+```
+
+---
+
+## 3. Pure Simple English Syntax Guide
+
+Lyslyn replaces traditional punctuation and cryptic syntax symbols with structured English:
+
+| Traditional Language | Lyslyn Simple English |
+|---|---|
+| `const languages = ["Python", "Rust"];` | `Set languages to a list of "Python" and "Rust"` |
+| `languages.push("Go");` | `Add "Go" to languages` |
+| `if (users.length === 0)` | `If users is empty:` |
+| `if (age >= 18)` | `If age is at least 18:` |
+| `if (n % 2 === 0)` | `If n is even:` |
+| `if (n % 2 !== 0)` | `If n is odd:` |
+| `if (user !== null)` | `If user is something:` (or `is not nil:`) |
+| `console.log("Hello", name);` | `Display "Hello", name` (or `Print`) |
+| `return result;` | `Give back result` (or `Return result`) |
+| `break;` | `Stop the loop` (or `Break`) |
+| `continue;` | `Skip to next` (or `Continue`) |
+| `for (let i = 0; i < 5; i++)` | `Do 5 times:` (or `Repeat 5 times:`) |
+| `for (const x of items)` | `For every x in items:` |
+| `fn(arg1, arg2)` | `Call fn with arg1 and arg2` |
+
+---
+
+## 4. Simple English Collections & Objects
+
+```lys
+# 1. Natural English Lists
+Set fruits to a list of "apple", "banana" and "cherry"
+Add "mango" to fruits
+
+Set inbox to an empty list
+If inbox is empty:
+    Display "Zero messages pending."
+
+# 2. Natural English Objects
+Set user to an object with:
+    username: "Raj"
+    role: "Architect"
+    age: 21
+
+# Inline style
+Set server_cfg to an object with host = "127.0.0.1", port = 8080
+```
+
+---
+
+## 5. Control Flow, Functions, and Error Handling in English
+
+```lys
+# Conditionals
+If balance is positive:
+    Display "In good credit."
+Otherwise if balance is zero:
+    Display "Zero balance."
+Otherwise:
+    Display "In debt."
+
+# Repetition & Loops
+For every fruit in fruits:
+    If fruit is equal to "banana":
+        Skip to next
+    Display "Fruit:", fruit
+
+Do 3 times:
+    Display "Lyslyn is simple English!"
+
+# Functions
+Create a function called greet with name and title:
+    Give back "Hello " + title + " " + name
+
+Call greet with "Raj" and "Architect"
 ```
 
 ---
