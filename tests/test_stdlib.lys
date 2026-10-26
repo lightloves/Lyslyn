@@ -9,7 +9,7 @@ Import files
 Assert(math.sqrt(25) is equal to 5, "math.sqrt")
 Assert(math.floor(4.9) is equal to 4, "math.floor")
 Assert(math.ceil(4.1) is equal to 5, "math.ceil")
-Assert(math.abs(-42) is equal to 42, "math.abs")
+Assert(math.abs( - 42) is equal to 42, "math.abs")
 
 # Text
 Set original to "  hello world  "

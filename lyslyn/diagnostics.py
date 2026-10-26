@@ -1,6 +1,58 @@
-"""Diagnostic and error reporting system for Lyslyn."""
+"""Diagnostic and error reporting system for Lyslyn with syntax-highlighted frames."""
+import re
 import sys
 from typing import Optional
+
+
+HIGHLIGHT_KEYWORDS = {
+    "set", "let", "constant", "define", "create", "called", "change",
+    "increase", "decrease", "function", "method", "with", "return",
+    "if", "otherwise", "else", "while", "for", "each", "in", "repeat", "times",
+    "break", "continue", "try", "catch", "finally", "raise", "throw",
+    "import", "from", "send", "request", "save", "response", "print", "assert",
+    "serve", "route", "use", "respond", "validate", "body", "status", "port",
+    "true", "false", "nil", "and", "or", "not", "is", "equals", "at", "least", "most"
+}
+
+
+def highlight_code_line(line: str) -> str:
+    """Apply terminal ANSI colors to code snippet line."""
+    c_kw = "\033[95;1m"    # purple bold
+    c_str = "\033[92m"     # green
+    c_num = "\033[96m"     # cyan
+    c_comment = "\033[90m" # gray
+    c_reset = "\033[0m"
+
+    # Check for comments
+    if line.strip().startswith("#") or line.strip().startswith("//"):
+        return f"{c_comment}{line}{c_reset}"
+
+    # Extract strings
+    strings = []
+    def save_str(m):
+        strings.append(m.group(0))
+        return f"\001{len(strings)-1}\002"
+
+    temp = re.sub(r'("[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')', save_str, line)
+
+    # Highlight numbers
+    temp = re.sub(r'\b\d+(\.\d+)?\b', lambda m: f"{c_num}{m.group(0)}{c_reset}", temp)
+
+    # Highlight keywords
+    words = re.split(r'(\b[a-zA-Z_][a-zA-Z0-9_]*\b)', temp)
+    res = []
+    for w in words:
+        if w.lower() in HIGHLIGHT_KEYWORDS:
+            res.append(f"{c_kw}{w}{c_reset}")
+        else:
+            res.append(w)
+    out = "".join(res)
+
+    # Restore strings with color
+    for i, s in enumerate(strings):
+        out = out.replace(f"\001{i}\002", f"{c_str}{s}{c_reset}")
+
+    return out
 
 
 class LyslynError(Exception):
@@ -25,16 +77,17 @@ class LyslynError(Exception):
         self.suggestion = suggestion
 
     def format_diagnostic(self, color: bool = True) -> str:
-        """Render a formatted, user-friendly compiler diagnostic."""
+        """Render a formatted, user-friendly compiler diagnostic with code frame."""
         c_red = "\033[91;1m" if color else ""
         c_cyan = "\033[96m" if color else ""
         c_yellow = "\033[93m" if color else ""
         c_bold = "\033[1m" if color else ""
+        c_dim = "\033[90m" if color else ""
         c_reset = "\033[0m" if color else ""
 
-        error_type = self.__class__.__name__
-        header = f"{c_red}{error_type}{c_reset}: {c_bold}{self.message}{c_reset}"
-        location = f"  --> {c_cyan}{self.filename}:{self.line}:{self.column}{c_reset}"
+        error_type = self.__class__.__name__.rstrip("_")
+        header = f"{c_red}✖ {error_type}{c_reset}: {c_bold}{self.message}{c_reset}"
+        location = f"  {c_dim}-->{c_reset} {c_cyan}{self.filename}:{self.line}:{self.column}{c_reset}"
 
         lines = [header, location]
 
@@ -42,8 +95,9 @@ class LyslynError(Exception):
             source_lines = self.source.splitlines()
             if 1 <= self.line <= len(source_lines):
                 line_str = source_lines[self.line - 1]
-                line_num_str = f"{self.line:>4} | "
-                lines.append(f"{c_cyan}{line_num_str}{c_reset}{line_str}")
+                line_num_str = f"{self.line:>4} │ "
+                colored_line = highlight_code_line(line_str) if color else line_str
+                lines.append(f"{c_dim}{line_num_str}{c_reset}{colored_line}")
 
                 # Pointer row
                 padding = " " * (len(line_num_str) + max(0, self.column - 1))
@@ -51,7 +105,7 @@ class LyslynError(Exception):
                 lines.append(f"{padding}{c_red}{pointer}{c_reset}")
 
         if self.suggestion:
-            lines.append(f"  {c_yellow}Note:{c_reset} {self.suggestion}")
+            lines.append(f"  {c_yellow}💡 Suggestion:{c_reset} {self.suggestion}")
 
         return "\n".join(lines)
 
@@ -60,20 +114,16 @@ class LyslynError(Exception):
 
 
 class LexerError(LyslynError):
-    """Raised during lexical scanning."""
     pass
 
 
 class ParseError(LyslynError):
-    """Raised during syntactic parsing."""
     pass
 
 
 class SemanticError(LyslynError):
-    """Raised during semantic analysis."""
     pass
 
 
 class RuntimeError_(LyslynError):
-    """Raised during program execution."""
     pass

@@ -33,11 +33,11 @@ Print "Triple 15:", triple(15)
 # Stateful closure counter
 Create a function called create_bank_account with initial_balance:
     Set balance to initial_balance
-    
+
     Create a function called deposit with amount:
         Increase balance by amount
         Return balance
-        
+
     Return deposit
 
 Set my_account to create_bank_account(100)

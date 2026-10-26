@@ -99,7 +99,7 @@ Serve HTTP on port 8080:
             "name": request.body.name,
             "sku": request.body.sku,
             "price": request.body.price,
-            "stock": if request.body.stock is not nil: request.body.stock otherwise: 0,
+            "stock": if request.body.stock is not nil: request.body.stock Otherwise: 0,
             "created_at": time.now()
         })
 

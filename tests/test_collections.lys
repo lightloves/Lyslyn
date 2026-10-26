@@ -4,7 +4,7 @@ Set lst to [10, 20, 30]
 Assert(lst.length is equal to 3, "List length property")
 Assert(lst[0] is equal to 10, "List index 0")
 Assert(lst[1] is equal to 20, "List index 1")
-Assert(lst[-1] is equal to 30, "Negative index")
+Assert(lst[ - 1] is equal to 30, "Negative index")
 
 append(lst, 40)
 Assert(lst.length is equal to 4, "Appended list length")

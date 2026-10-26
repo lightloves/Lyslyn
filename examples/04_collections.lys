@@ -6,7 +6,7 @@
 Set fruits to ["Apple", "Banana", "Cherry"]
 Print "Original list:", fruits
 Print "First fruit:", fruits[0]
-Print "Last fruit:", fruits[-1]
+Print "Last fruit:", fruits[ - 1]
 
 # Appending to lists
 append(fruits, "Dragonfruit")

@@ -1,98 +1,224 @@
-"""Source code formatter for the Lyslyn programming language."""
+"""Production-grade Code Beautifier and Formatter for Lyslyn."""
+import difflib
 import re
-from typing import List, Dict
+from typing import Dict, List, Optional, Tuple
 
 
-TITLE_KEYWORDS = {
-    "set", "let", "constant", "define", "create", "called", "change",
-    "increase", "decrease", "function", "method", "with", "return",
-    "if", "otherwise", "else", "while", "for", "each", "in", "repeat", "times",
-    "break", "continue", "try", "catch", "finally", "raise", "throw",
-    "import", "from", "send", "request", "save", "response", "print", "ask", "async", "wait"
+STATEMENT_KEYWORDS = {
+    "set": "Set",
+    "let": "Let",
+    "constant": "Constant",
+    "define": "Define",
+    "create": "Create",
+    "function": "Function",
+    "method": "Method",
+    "return": "Return",
+    "if": "If",
+    "otherwise": "Otherwise",
+    "else": "Else",
+    "while": "While",
+    "for": "For",
+    "each": "each",
+    "repeat": "Repeat",
+    "times": "times",
+    "break": "Break",
+    "continue": "Continue",
+    "try": "Try",
+    "catch": "Catch",
+    "finally": "Finally",
+    "raise": "Raise",
+    "throw": "Throw",
+    "import": "Import",
+    "from": "From",
+    "send": "Send",
+    "request": "request",
+    "save": "save",
+    "response": "response",
+    "serve": "Serve",
+    "route": "Route",
+    "use": "Use",
+    "respond": "Respond",
+    "validate": "Validate",
+    "print": "Print",
+    "assert": "Assert",
+    "ask": "Ask",
+    "async": "Async",
+    "wait": "Wait",
 }
+
+CONNECTOR_KEYWORDS = {
+    "to": "to",
+    "with": "with",
+    "by": "by",
+    "is": "is",
+    "as": "as",
+    "and": "and",
+    "or": "or",
+    "not": "not",
+    "in": "in",
+    "on": "on",
+    "port": "port",
+    "host": "host",
+    "middleware": "middleware",
+    "status": "status",
+    "body": "body",
+    "query": "query",
+    "params": "params",
+    "headers": "headers",
+    "data": "data",
+    "timeout": "timeout",
+    "json": "json",
+    "text": "text",
+    "redirect": "redirect",
+    "true": "true",
+    "false": "false",
+    "nil": "nil",
+    "null": "nil",
+}
+
+HTTP_METHODS = {"get", "post", "put", "delete", "patch", "options", "head"}
 
 
 def format_source(source: str) -> str:
-    """Format Lyslyn source code with consistent indentation, spacing, and styling."""
+    """Beautify Lyslyn source code with clean indentation, consistent spacing, and standard keyword casing."""
     lines = source.splitlines()
     formatted_lines: List[str] = []
-    current_indent = 0
-    blank_line_count = 0
+    consecutive_empty = 0
 
     for raw_line in lines:
-        line = raw_line.strip()
+        stripped = raw_line.strip()
 
         # Handle empty lines
-        if not line:
-            blank_line_count += 1
-            if blank_line_count <= 2 and formatted_lines:
+        if not stripped:
+            consecutive_empty += 1
+            if consecutive_empty <= 2 and formatted_lines:
                 formatted_lines.append("")
             continue
 
-        blank_line_count = 0
+        consecutive_empty = 0
+
+        # Preserve indentation level
+        tab_expanded = raw_line.replace("\t", "    ")
+        leading_spaces = len(tab_expanded) - len(tab_expanded.lstrip(" "))
+        indent_level = round(leading_spaces / 4.0)
+        indent_prefix = "    " * indent_level
 
         # Preserve comments
-        if line.startswith("#") or line.startswith("//"):
-            indent_prefix = "    " * current_indent
-            formatted_lines.append(f"{indent_prefix}{line}")
+        if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("/*"):
+            formatted_lines.append(f"{indent_prefix}{stripped}")
             continue
 
-        # Adjust indentation if line starts with dedenting keywords:
-        lower_line = line.lower()
-        is_dedent = (
-            lower_line.startswith("otherwise") or
-            lower_line.startswith("else") or
-            lower_line.startswith("catch") or
-            lower_line.startswith("finally")
-        )
-
-        effective_indent = max(0, current_indent - 1) if is_dedent else current_indent
-
-        # Protect string literals from regex manipulation
+        # Extract string literals to protect them from regex modification
         strings_map: Dict[str, str] = {}
         str_idx = [0]
 
-        def replace_str(match: re.Match) -> str:
-            placeholder = f"__LYS_STR_{str_idx[0]}__"
+        def mask_string(match: re.Match) -> str:
+            placeholder = f"__LYSLYN_STR_{str_idx[0]}__"
             str_idx[0] += 1
             strings_map[placeholder] = match.group(0)
             return placeholder
 
-        # Extract double and single quoted strings
-        masked_line = re.sub(r'("[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')', replace_str, line)
+        # Match single/double/triple quotes
+        line_content = re.sub(r'("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')', mask_string, stripped)
 
-        # Normalize casing of leading keywords
-        tokens = masked_line.split()
-        normalized_tokens = []
-        for word in tokens:
-            w_clean = word.rstrip(":")
+        # Check for inline comments
+        inline_comment = ""
+        if " #" in line_content:
+            parts = line_content.split(" #", 1)
+            line_content = parts[0]
+            inline_comment = " #" + parts[1]
+        elif " //" in line_content:
+            parts = line_content.split(" //", 1)
+            line_content = parts[0]
+            inline_comment = " //" + parts[1]
+
+        # Word-level keyword canonicalization
+        words = line_content.split()
+        normalized_words = []
+        is_first_word = True
+
+        for i, word in enumerate(words):
+            clean_word = word.rstrip(":")
             has_colon = word.endswith(":")
-            if w_clean.lower() in TITLE_KEYWORDS:
-                w_norm = w_clean.capitalize()
-                if has_colon:
-                    w_norm += ":"
-                normalized_tokens.append(w_norm)
+            lower_word = clean_word.lower()
+
+            if is_first_word and lower_word in STATEMENT_KEYWORDS:
+                w_out = STATEMENT_KEYWORDS[lower_word]
+                is_first_word = False
+            elif lower_word in HTTP_METHODS and i > 0 and words[i - 1].lower() in ("route", "send"):
+                w_out = lower_word.upper()
+            elif lower_word in CONNECTOR_KEYWORDS:
+                w_out = CONNECTOR_KEYWORDS[lower_word]
+            elif lower_word in STATEMENT_KEYWORDS and lower_word in ("otherwise", "else", "catch", "finally", "return"):
+                w_out = STATEMENT_KEYWORDS[lower_word]
             else:
-                normalized_tokens.append(word)
+                w_out = clean_word
+                is_first_word = False
 
-        norm_line = " ".join(normalized_tokens)
+            if has_colon:
+                w_out += ":"
+            normalized_words.append(w_out)
 
-        # Ensure clean spaces around operators
-        norm_line = re.sub(r"\s*([+\-*/%])\s*", r" \1 ", norm_line)
-        norm_line = re.sub(r"\s*(==|!=|<=|>=|<|>|=)\s*", r" \1 ", norm_line)
-        norm_line = re.sub(r" +", " ", norm_line)
-        norm_line = re.sub(r"\s*:\s*$", ":", norm_line)
-        norm_line = re.sub(r"\s*,\s*", ", ", norm_line)
+        line_norm = " ".join(normalized_words)
+
+        # Spacing around operators
+        line_norm = re.sub(r"\s*([+\-*/%])\s*", r" \1 ", line_norm)
+        line_norm = re.sub(r"\s*(==|!=|<=|>=|<|>|=)\s*", r" \1 ", line_norm)
+        line_norm = re.sub(r"\s*,\s*", ", ", line_norm)
+        line_norm = re.sub(r"\s*:\s*$", ":", line_norm)
+
+        # Clean multiple spaces
+        line_norm = re.sub(r" +", " ", line_norm)
+
+        # Clean dictionary entry colons: "key": value
+        line_norm = re.sub(r"([a-zA-Z0-9_\)\]\>\"\'])\s*:\s+", r"\1: ", line_norm)
 
         # Restore string literals
         for placeholder, original_str in strings_map.items():
-            norm_line = norm_line.replace(placeholder, original_str)
+            line_norm = line_norm.replace(placeholder, original_str)
 
-        indent_prefix = "    " * effective_indent
-        formatted_lines.append(f"{indent_prefix}{norm_line}")
+        # Re-attach inline comment
+        if inline_comment:
+            line_norm += inline_comment
 
-        # Check if line opens a new block
-        if norm_line.endswith(":"):
-            current_indent = effective_indent + 1
+        formatted_lines.append(f"{indent_prefix}{line_norm.rstrip()}")
 
-    return "\n".join(formatted_lines) + "\n"
+    # Ensure single newline at end of file
+    result = "\n".join(formatted_lines).rstrip() + "\n"
+    return result
+
+
+def generate_diff(original: str, formatted: str, filename: str = "<source>") -> str:
+    """Generate colorized unified diff between original and beautified code."""
+    orig_lines = original.splitlines(keepends=True)
+    fmt_lines = formatted.splitlines(keepends=True)
+
+    diff = list(difflib.unified_diff(
+        orig_lines,
+        fmt_lines,
+        fromfile=f"a/{filename}",
+        tofile=f"b/{filename}"
+    ))
+
+    if not diff:
+        return ""
+
+    c_green = "\033[92m"
+    c_red = "\033[91m"
+    c_cyan = "\033[96m"
+    c_reset = "\033[0m"
+
+    out = []
+    for line in diff:
+        if line.startswith("+++") or line.startswith("---"):
+            out.append(f"\033[1m{line}\033[0m")
+        elif line.startswith("@@"):
+            out.append(f"{c_cyan}{line.rstrip()}{c_reset}\n")
+        elif line.startswith("+"):
+            out.append(f"{c_green}{line.rstrip()}{c_reset}\n")
+        elif line.startswith("-"):
+            out.append(f"{c_red}{line.rstrip()}{c_reset}\n")
+        else:
+            out.append(line)
+
+    return "".join(out)

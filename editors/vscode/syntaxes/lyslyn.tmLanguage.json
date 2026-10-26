@@ -1,0 +1,148 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lyslyn",
+  "scopeName": "source.lyslyn",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#backend" },
+    { "include": "#operators" },
+    { "include": "#functions" },
+    { "include": "#constants" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.lyslyn",
+          "match": "#.*$"
+        },
+        {
+          "name": "comment.line.double-slash.lyslyn",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.lyslyn",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.lyslyn",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.lyslyn",
+              "match": "\\\\."
+            },
+            {
+              "name": "variable.interpolation.lyslyn",
+              "begin": "\\{",
+              "end": "\\}",
+              "patterns": [
+                { "include": "$self" }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.lyslyn",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.lyslyn",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.lyslyn",
+          "match": "\\b[0-9]+(_[0-9]+)*\\.[0-9]+(_[0-9]+)*([eE][+-]?[0-9]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.lyslyn",
+          "match": "\\b[0-9]+(_[0-9]+)*\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.lyslyn",
+          "match": "\\b(If|Otherwise if|Otherwise|Else if|Else|While|For|each|in|Repeat|times|Break|Continue|Return|Try|Catch|Finally|Raise|Throw)\\b"
+        },
+        {
+          "name": "keyword.declaration.lyslyn",
+          "match": "\\b(Set|Let|Constant|Define|Create|called|Change|Increase|Decrease|by|to|is|as)\\b"
+        },
+        {
+          "name": "keyword.operator.logical.lyslyn",
+          "match": "\\b(and|or|not|equals|is equal to|is not equal to|is at least|is at most|is greater than|is less than)\\b"
+        },
+        {
+          "name": "keyword.import.lyslyn",
+          "match": "\\b(Import|From)\\b"
+        }
+      ]
+    },
+    "backend": {
+      "patterns": [
+        {
+          "name": "keyword.control.backend.lyslyn",
+          "match": "\\b(Serve|Route|Use|Respond|Validate|on|port|host|middleware|status|with|json|text|redirect|body|query|params)\\b"
+        },
+        {
+          "name": "constant.language.http-method.lyslyn",
+          "match": "\\b(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.definition.lyslyn",
+          "match": "(?<=\\b(function|called)\\s+)[a-zA-Z_][a-zA-Z0-9_]*"
+        },
+        {
+          "name": "support.function.builtin.lyslyn",
+          "match": "\\b(print|println|input|len|length|type|str|int|float|bool|range|append|pop|keys|values|assert|Assert|Print)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.lyslyn",
+          "match": "\\b(true|false|yes|no)\\b"
+        },
+        {
+          "name": "constant.language.nil.lyslyn",
+          "match": "\\b(nil|null|nothing)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arithmetic.lyslyn",
+          "match": "(\\+|\\-|\\*|\\/|%)"
+        },
+        {
+          "name": "keyword.operator.comparison.lyslyn",
+          "match": "(==|!=|<=|>=|<|>|=)"
+        }
+      ]
+    }
+  }
+}

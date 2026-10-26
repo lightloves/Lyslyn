@@ -59,7 +59,7 @@ Create a function called list_tasks:
         Print "  No tasks found. Everything is done!"
     Otherwise:
         For each t in tasks:
-            Set status_mark to if t.completed: "[DONE]" otherwise: "[TODO]"
+            Set status_mark to if t.completed: "[DONE]" Otherwise: "[TODO]"
             Print "  {status_mark} #{t.id}: {t.title} (Priority: {t.priority})"
     Print "===================================================\n"
 
