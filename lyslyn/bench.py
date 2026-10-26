@@ -40,7 +40,6 @@ def run_benchmark(filepath: str, iterations: int = 100) -> List[BenchmarkResult]
             bench_funcs[k] = v
 
     if not bench_funcs:
-        # If no explicit bench_ functions, benchmark the entire script execution
         times = []
         for _ in range(iterations):
             sub_interp = Interpreter(filename=filepath, source=source)
@@ -51,11 +50,9 @@ def run_benchmark(filepath: str, iterations: int = 100) -> List[BenchmarkResult]
 
     results = []
     for name, fn in bench_funcs.items():
-        # Warmup
         for _ in range(5):
             interp.call_function(fn, [])
 
-        # Measured
         times = []
         for _ in range(iterations):
             t0 = time.perf_counter()

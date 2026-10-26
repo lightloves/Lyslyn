@@ -48,7 +48,6 @@ class Chunk:
         except ValueError:
             return offset + 1, f"{offset:04d}  {line_str}UNKNOWN_OPCODE({opcode_num})"
 
-        # Instructions with constant operand
         if opcode in (
             OpCode.OP_CONSTANT, OpCode.OP_DEF_GLOBAL,
             OpCode.OP_GET_GLOBAL, OpCode.OP_SET_GLOBAL
@@ -60,7 +59,6 @@ class Chunk:
                 val_repr = val_repr[:27] + "..."
             return offset + 2, f"{offset:04d}  {line_str}{op_name:<18} #{const_idx:<3} ({val_repr})"
 
-        # Instructions with integer operand (stack slot, count, etc.)
         if opcode in (
             OpCode.OP_GET_LOCAL, OpCode.OP_SET_LOCAL,
             OpCode.OP_GET_UPVALUE, OpCode.OP_SET_UPVALUE,
@@ -70,19 +68,16 @@ class Chunk:
             slot = self.code[offset + 1]
             return offset + 2, f"{offset:04d}  {line_str}{op_name:<18} {slot}"
 
-        # Jumps with 16-bit offset
         if opcode in (OpCode.OP_JUMP, OpCode.OP_JUMP_IF_FALSE, OpCode.OP_LOOP):
             jump_offset = (self.code[offset + 1] << 8) | self.code[offset + 2]
             target = offset + 3 - jump_offset if opcode == OpCode.OP_LOOP else offset + 3 + jump_offset
             return offset + 3, f"{offset:04d}  {line_str}{op_name:<18} -> {target:04d}"
 
-        # Simple single-byte instructions
         return offset + 1, f"{offset:04d}  {line_str}{op_name}"
 
     def serialize(self) -> bytes:
         """Serialize chunk to binary format (.lysc)."""
         data = bytearray(MAGIC_HEADER)
-        # Store metadata and constants as JSON payload
         meta = {
             "name": self.name,
             "constants": self.constants
@@ -91,11 +86,9 @@ class Chunk:
         data.extend(struct.pack(">I", len(meta_bytes)))
         data.extend(meta_bytes)
 
-        # Store code length and bytecode
         data.extend(struct.pack(">I", len(self.code)))
         data.extend(bytes(self.code))
 
-        # Store line table (compressed run-length or direct)
         data.extend(struct.pack(">I", len(self.lines)))
         for line in self.lines:
             data.extend(struct.pack(">H", min(65535, line)))

@@ -1,14 +1,8 @@
-# ==============================================================================
-# Example 10: Production-Grade REST API Backend Server
-# Written in Lyslyn — The English-Structured Backend Language
-# ==============================================================================
-
 Import db
 Import server
 Import crypto
 Import time
 
-# 1. Initialize SQLite Database & Tables
 db.connect("./products_store.db")
 
 db.create_table("products", {
@@ -20,7 +14,6 @@ db.create_table("products", {
     "created_at": "TEXT NOT NULL"
 })
 
-# Seed initial catalog if empty
 If db.count("products") is equal to 0:
     db.insert("products", {
         "name": "Mechanical Keyboard",
@@ -38,12 +31,10 @@ If db.count("products") is equal to 0:
     })
     Print "✓ Seeded initial database records."
 
-# 2. Launch HTTP Server on Port 8080 with Middleware & Endpoints
 Serve HTTP on port 8080:
     Use middleware server.cors("*")
     Use middleware server.logger()
 
-    # Health Check
     Route GET "/health":
         Respond with status 200 and json {
             "status": "healthy",
@@ -51,7 +42,6 @@ Serve HTTP on port 8080:
             "timestamp": time.now()
         }
 
-    # API Info
     Route GET "/":
         Respond with status 200 and json {
             "name": "Lyslyn Inventory & Products API",
@@ -65,7 +55,6 @@ Serve HTTP on port 8080:
             ]
         }
 
-    # List Products
     Route GET "/api/products":
         Set all_products to db.query("SELECT * FROM products ORDER BY id DESC")
         Respond with status 200 and json {
@@ -73,7 +62,6 @@ Serve HTTP on port 8080:
             "data": all_products
         }
 
-    # Get Single Product by ID
     Route GET "/api/products/:id":
         Set item to db.find_one("products", {"id": request.params.id})
         If item is nil:
@@ -86,7 +74,6 @@ Serve HTTP on port 8080:
                 "product": item
             }
 
-    # Create Product with Request Body Validation
     Route POST "/api/products":
         Validate body with {
             "name": "required string min:3",
@@ -108,7 +95,6 @@ Serve HTTP on port 8080:
             "product": new_product
         }
 
-    # Delete Product
     Route DELETE "/api/products/:id":
         Set rows to db.delete("products", {"id": request.params.id})
         If rows is equal to 0:

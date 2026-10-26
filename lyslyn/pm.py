@@ -48,7 +48,6 @@ class PackageManager:
         manifest[dep_key][package_name] = version
         self.save_manifest(manifest)
 
-        # Update lockfile with SHA-256 checksum
         lock = self.load_lockfile()
         pkg_hash = hashlib.sha256(f"{package_name}@{version}".encode("utf-8")).hexdigest()
         lock["packages"][package_name] = {
@@ -63,7 +62,6 @@ class PackageManager:
         pkg_dir = os.path.join(self.packages_dir, package_name)
         os.makedirs(pkg_dir, exist_ok=True)
 
-        # Create package index placeholder if empty
         index_file = os.path.join(pkg_dir, "index.lys")
         if not os.path.isfile(index_file):
             with open(index_file, "w", encoding="utf-8") as f:
@@ -123,7 +121,6 @@ class PackageManager:
                 with open(index_path, "w", encoding="utf-8") as f:
                     f.write(f'# Package: {pkg} v{ver}\n')
 
-            # Ensure lock entry
             if pkg not in lock["packages"]:
                 pkg_hash = hashlib.sha256(f"{pkg}@{ver}".encode("utf-8")).hexdigest()
                 lock["packages"][pkg] = {

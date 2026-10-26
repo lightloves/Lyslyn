@@ -115,7 +115,6 @@ def format_source(source: str) -> str:
     for raw_line in lines:
         stripped = raw_line.strip()
 
-        # Handle empty lines
         if not stripped:
             consecutive_empty += 1
             if consecutive_empty <= 2 and formatted_lines:
@@ -124,12 +123,10 @@ def format_source(source: str) -> str:
 
         consecutive_empty = 0
 
-        # Calculate base indentation
         tab_expanded = raw_line.replace("\t", "    ")
         leading_spaces = len(tab_expanded) - len(tab_expanded.lstrip(" "))
         indent_level = round(leading_spaces / 4.0)
 
-        # Auto-indent if previous line opened a block and current line lacks indentation
         is_dedent_keyword = any(
             stripped.lower().startswith(kw) for kw in ("otherwise", "else", "catch", "finally")
         )
@@ -139,12 +136,10 @@ def format_source(source: str) -> str:
 
         indent_prefix = "    " * indent_level
 
-        # Preserve comments
         if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("/*"):
             formatted_lines.append(f"{indent_prefix}{stripped}")
             continue
 
-        # Extract string literals to protect them from regex modification
         strings_map: Dict[str, str] = {}
         str_idx = [0]
 
@@ -154,10 +149,8 @@ def format_source(source: str) -> str:
             strings_map[placeholder] = match.group(0)
             return placeholder
 
-        # Match single/double/triple quotes
         line_content = re.sub(r'("""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')', mask_string, stripped)
 
-        # Check for inline comments
         inline_comment = ""
         if " #" in line_content:
             parts = line_content.split(" #", 1)
@@ -168,7 +161,6 @@ def format_source(source: str) -> str:
             line_content = parts[0]
             inline_comment = " //" + parts[1]
 
-        # Word-level keyword canonicalization
         words = line_content.split()
         normalized_words = []
         is_first_word = True
@@ -197,23 +189,18 @@ def format_source(source: str) -> str:
 
         line_norm = " ".join(normalized_words)
 
-        # Spacing around operators
         line_norm = re.sub(r"\s*([+\-*/%])\s*", r" \1 ", line_norm)
         line_norm = re.sub(r"\s*(==|!=|<=|>=|<|>|=)\s*", r" \1 ", line_norm)
         line_norm = re.sub(r"\s*,\s*", ", ", line_norm)
         line_norm = re.sub(r"\s*:\s*$", ":", line_norm)
 
-        # Clean multiple spaces
         line_norm = re.sub(r" +", " ", line_norm)
 
-        # Clean dictionary entry colons: "key": value
         line_norm = re.sub(r"([a-zA-Z0-9_\)\]\>\"\'])\s*:\s+", r"\1: ", line_norm)
 
-        # Restore string literals
         for placeholder, original_str in strings_map.items():
             line_norm = line_norm.replace(placeholder, original_str)
 
-        # Re-attach inline comment
         if inline_comment:
             line_norm += inline_comment
 
@@ -222,7 +209,6 @@ def format_source(source: str) -> str:
 
         formatted_lines.append(f"{indent_prefix}{line_norm.rstrip()}")
 
-    # Ensure single newline at end of file
     result = "\n".join(formatted_lines).rstrip() + "\n"
     return result
 

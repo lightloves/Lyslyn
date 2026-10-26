@@ -44,7 +44,6 @@ class RouteEntry:
         self.regex = self._compile_pattern(path_pattern)
 
     def _compile_pattern(self, pattern: str) -> re.Pattern:
-        # Convert e.g. "/api/users/:id/posts/:post_id" to regex
         parts = pattern.strip("/").split("/") if pattern.strip("/") else []
         regex_parts = []
         for part in parts:
@@ -109,7 +108,6 @@ class ServerApp:
         path = parsed.path
         query = {k: v[0] if len(v) == 1 else v for k, v in urllib.parse.parse_qs(parsed.query).items()}
 
-        # Parse body
         body = None
         if raw_body:
             content_type = headers.get("content-type", "")
@@ -133,25 +131,21 @@ class ServerApp:
 
         resp_headers = {"Content-Type": "application/json"}
 
-        # Execute middlewares
         for mid in self.middlewares:
             if callable(mid):
                 try:
                     res = mid(req)
-                    # If middleware returns a dict with status or early response
                     if isinstance(res, dict) and "status" in res:
                         body_out = json.dumps(res.get("body", {}))
                         return res.get("status", 200), resp_headers, body_out
                 except Exception as e:
                     return 500, resp_headers, json.dumps({"error": f"Middleware error: {e}"})
 
-        # Match routes
         for route in self.routes:
             params = route.match(method, path)
             if params is not None:
                 req.params = params
                 try:
-                    # Invoke handler
                     if callable(route.handler):
                         result = route.handler(req)
                     else:
@@ -181,7 +175,6 @@ class ServerApp:
                 except Exception as e:
                     return 500, resp_headers, json.dumps({"error": f"Internal Server Error: {e}"})
 
-        # Not found
         return 404, resp_headers, json.dumps({
             "error": "Not Found",
             "message": f"Cannot {method} {path}"
@@ -240,7 +233,6 @@ class ServerApp:
                 self.do_request("PATCH")
 
             def do_OPTIONS(self):
-                # Built-in preflight handling
                 self.send_response(204)
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
@@ -248,7 +240,7 @@ class ServerApp:
                 self.end_headers()
 
             def log_message(self, format, *args):
-                pass  # Use Lyslyn's custom logger middleware instead
+                pass
 
         self.http_server = http.server.ThreadingHTTPServer((host, port), ThreadedHandler)
         self.is_running = True
@@ -268,13 +260,8 @@ class ServerApp:
             self.is_running = False
 
 
-# ============================================================================
-# Built-in Middleware Creators
-# ============================================================================
-
 def middleware_cors(allowed_origins: str = "*") -> Callable:
     def _cors(req: RequestContext) -> None:
-        # Handled in responses
         return None
     return _cors
 
@@ -314,7 +301,7 @@ def middleware_jwt_auth(secret: str, exclude: Optional[List[str]] = None) -> Cal
                 "status": 401,
                 "body": {"error": "Unauthorized", "message": "Missing Bearer token in Authorization header"}
             }
-        
+
         token = auth_header[7:].strip()
         try:
             payload = jwt_verify(token, secret)

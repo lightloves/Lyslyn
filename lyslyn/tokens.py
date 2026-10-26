@@ -5,18 +5,15 @@ from typing import Any, Optional
 
 
 class TokenType(Enum):
-    # Literals
     INT = auto()
     FLOAT = auto()
     STRING = auto()
     IDENTIFIER = auto()
 
-    # Literals Keywords
-    TRUE = auto()       # true, yes
-    FALSE = auto()      # false, no
-    NIL = auto()        # nil, null, nothing
+    TRUE = auto()
+    FALSE = auto()
+    NIL = auto()
 
-    # Variable & Declaration Keywords
     SET = auto()
     LET = auto()
     TO = auto()
@@ -29,7 +26,6 @@ class TokenType(Enum):
     DECREASE = auto()
     BY = auto()
 
-    # Functions & Types
     FUNCTION = auto()
     METHOD = auto()
     WITH = auto()
@@ -37,7 +33,6 @@ class TokenType(Enum):
     ASYNC = auto()
     WAIT = auto()
 
-    # Control Flow
     IF = auto()
     OTHERWISE = auto()
     ELSE = auto()
@@ -50,7 +45,6 @@ class TokenType(Enum):
     BREAK = auto()
     CONTINUE = auto()
 
-    # Error Handling
     TRY = auto()
     CATCH = auto()
     ERROR = auto()
@@ -59,11 +53,9 @@ class TokenType(Enum):
     RAISE = auto()
     THROW = auto()
 
-    # Modules
     IMPORT = auto()
     FROM = auto()
 
-    # Network / HTTP / Backend Server
     SEND = auto()
     REQUEST = auto()
     SAVE = auto()
@@ -83,12 +75,10 @@ class TokenType(Enum):
     VALIDATE = auto()
     BODY = auto()
 
-    # I/O
     PRINT = auto()
     ASK = auto()
     ASSERT = auto()
 
-    # Logical & English comparison keywords
     AND = auto()
     OR = auto()
     NOT = auto()
@@ -102,39 +92,36 @@ class TokenType(Enum):
     LEAST = auto()
     MOST = auto()
 
-    # Symbols & Operators
-    PLUS = auto()           # +
-    MINUS = auto()          # -
-    STAR = auto()           # *
-    SLASH = auto()          # /
-    PERCENT = auto()        # %
+    PLUS = auto()
+    MINUS = auto()
+    STAR = auto()
+    SLASH = auto()
+    PERCENT = auto()
 
-    EQUAL_SIGN = auto()     # =
-    EQUAL_EQUAL = auto()    # ==
-    BANG_EQUAL = auto()     # !=
-    GREATER_THAN = auto()   # >
-    GREATER_EQUAL = auto()  # >=
-    LESS_THAN = auto()      # <
-    LESS_EQUAL = auto()     # <=
+    EQUAL_SIGN = auto()
+    EQUAL_EQUAL = auto()
+    BANG_EQUAL = auto()
+    GREATER_THAN = auto()
+    GREATER_EQUAL = auto()
+    LESS_THAN = auto()
+    LESS_EQUAL = auto()
 
-    COLON = auto()          # :
-    COMMA = auto()          # ,
-    DOT = auto()            # .
-    LPAREN = auto()         # (
-    RPAREN = auto()         # )
-    LBRACKET = auto()       # [
-    RBRACKET = auto()       # ]
-    LBRACE = auto()         # {
-    RBRACE = auto()         # }
+    COLON = auto()
+    COMMA = auto()
+    DOT = auto()
+    LPAREN = auto()
+    RPAREN = auto()
+    LBRACKET = auto()
+    RBRACKET = auto()
+    LBRACE = auto()
+    RBRACE = auto()
 
-    # Layout tokens
     NEWLINE = auto()
     INDENT = auto()
     DEDENT = auto()
     EOF = auto()
 
 
-# Keyword lookup table (case-insensitive in lexer)
 KEYWORDS: dict[str, TokenType] = {
     "set": TokenType.SET,
     "let": TokenType.LET,

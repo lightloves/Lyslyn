@@ -1,28 +1,12 @@
-# ==============================================================================
-# Example 12: Pure Simple English Programming
-# ==============================================================================
-# Demonstrates that coding in Lyslyn is always simple, natural English:
-# - No cryptic symbols or unnecessary brackets
-# - Natural English lists: `a list of ...` and `an empty list`
-# - Natural English objects: `an object with ...`
-# - Natural English loops: `For every item in items:` and `Do 3 times:`
-# - Natural English conditionals: `is at least`, `is empty`, `is even`
-# - Natural English function calls: `Call ... with ... and ...`
-# - Natural English returns: `Give back ...`
-# ==============================================================================
-
-# 1. Variables and Simple English Lists
 Set developer to "Raj"
 Set age to 21
 Set programming_languages to a list of "Lyslyn", "Python", "Rust" and "TypeScript"
 
-# Simple English List Operations
 Add "SQL" to programming_languages
 
 Display "Developer:", developer
 Display "Languages mastered:", programming_languages
 
-# 2. Simple English Objects
 Set workstation to an object with:
     hostname: "workstation-01"
     os: "Linux"
@@ -31,7 +15,6 @@ Set workstation to an object with:
 Display "Workstation hostname:", workstation.hostname
 Display "Operating system:", workstation.os
 
-# 3. Simple English Conditionals & State Checks
 If age is at least 18:
     Display "Developer is an adult."
 Otherwise:
@@ -47,7 +30,6 @@ If empty_inbox is empty:
 If age is odd:
     Display "Age ({age}) is an odd number."
 
-# 4. Simple English Loops
 Display "\n--- Iterating Over Skills ---"
 For every lang in programming_languages:
     If lang is equal to "Lyslyn":
@@ -59,7 +41,6 @@ Display "\n--- Repeating an Action ---"
 Do 3 times:
     Display "Lyslyn code reads like clear English prose!"
 
-# 5. Simple English Functions & Returns
 Create a function called build_greeting with name and title:
     Set full_msg to "Greetings, " + title + " " + name + "! Welcome to Lyslyn."
     Give back full_msg
@@ -67,7 +48,6 @@ Create a function called build_greeting with name and title:
 Set greeting to build_greeting("Raj", "Lead Engineer")
 Display greeting
 
-# 6. Natural Function Execution
 Create a function called announce with event and date:
     Display "Announcement: [" + event + "] scheduled on " + date
 

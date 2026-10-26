@@ -3,7 +3,6 @@
 import sys
 import os
 
-# Ensure project root is in Python module search path
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 if PROJECT_ROOT not in sys.path:

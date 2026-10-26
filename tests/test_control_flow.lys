@@ -1,5 +1,3 @@
-# Unit tests: Control Flow & Loops
-
 Set val to 50
 Set result to "none"
 
@@ -12,7 +10,6 @@ Otherwise:
 
 Assert(result is equal to "medium", "If-otherwise branch evaluation")
 
-# Test While Loop
 Set count to 0
 Set sum to 0
 While count < 5:
@@ -22,14 +19,12 @@ While count < 5:
 Assert(count is equal to 5, "While loop count")
 Assert(sum is equal to 15, "While loop sum")
 
-# Test Repeat Loop
 Set repeat_counter to 0
 Repeat 4 times:
     Increase repeat_counter by 1
 
 Assert(repeat_counter is equal to 4, "Repeat loop count")
 
-# Test For-in Loop
 Set numbers to [1, 2, 3, 4]
 Set for_sum to 0
 For each n in numbers:
@@ -37,7 +32,6 @@ For each n in numbers:
 
 Assert(for_sum is equal to 10, "For-in loop sum")
 
-# Test Break & Continue
 Set idx to 0
 Set seen to []
 While idx < 10:

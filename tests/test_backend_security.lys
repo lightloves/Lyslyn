@@ -1,26 +1,20 @@
-# Unit tests: Backend Security, Cryptography & Validation
-
 Import crypto
 Import validation
 
-# Cryptography: Password Hashing (PBKDF2 HMAC-SHA256)
 Set pass to "SecretAdminPassword123!"
 Set hashed to crypto.hash_password(pass)
 Assert(crypto.verify_password(pass, hashed) is equal to true, "Correct password verified")
 Assert(crypto.verify_password("WrongPassword", hashed) is equal to false, "Wrong password rejected")
 
-# Hashing
 Set sha to crypto.sha256("lyslyn")
 Assert(sha.length is equal to 64, "SHA-256 length is 64 hex characters")
 
-# Random tokens and UUIDs
 Set tok to crypto.token(16)
 Assert(tok.length is equal to 32, "16 bytes token is 32 hex chars")
 
 Set uid to crypto.uuid()
 Assert(uid.length is equal to 36, "UUID v4 length is 36 chars")
 
-# Validation Module
 Set valid_user to {
     "name": "Raj",
     "email": "raj@lyslyn.org",

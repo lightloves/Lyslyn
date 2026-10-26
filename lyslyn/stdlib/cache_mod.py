@@ -81,20 +81,18 @@ class TTLCache:
         with self._lock:
             if self.has(key):
                 return self.get(key)
-            
-            # Compute value
+
             if callable(compute_fn):
                 val = compute_fn()
             elif hasattr(compute_fn, "call"):
                 val = compute_fn.call([])
             else:
                 val = compute_fn
-            
+
             self.set(key, val, ttl_seconds)
             return val
 
 
-# Default global instance
 _GLOBAL_CACHE = TTLCache()
 
 

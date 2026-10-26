@@ -1,5 +1,3 @@
-# Unit tests: Language Basics & Arithmetic
-
 Set a to 10
 Set b to 20
 Set c to a + b

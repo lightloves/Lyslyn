@@ -1,13 +1,8 @@
-# ==============================================================================
-# Example 05: Error Handling with Try, Catch, Finally & Raise
-# ==============================================================================
-
 Create a function called divide_safe with a, b:
     If b is equal to 0:
         Raise error "Division by zero is not allowed"
     Return a / b
 
-# Handling an expected error
 Try:
     Print "Attempting 10 / 2..."
     Set result to divide_safe(10, 2)

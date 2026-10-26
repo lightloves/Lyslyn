@@ -1,11 +1,8 @@
-# Unit tests: Functions & Closures
-
 Create a function called add with x, y:
     Return x + y
 
 Assert(add(15, 25) is equal to 40, "Simple function call")
 
-# Recursion
 Create a function called fib with n:
     If n is at most 1:
         Return n
@@ -15,7 +12,6 @@ Assert(fib(0) is equal to 0, "Fibonacci 0")
 Assert(fib(1) is equal to 1, "Fibonacci 1")
 Assert(fib(7) is equal to 13, "Fibonacci 7")
 
-# Closures
 Create a function called make_adder with base:
     Create a function called inner with extra:
         Return base + extra
@@ -25,7 +21,6 @@ Set add10 to make_adder(10)
 Assert(add10(5) is equal to 15, "Closure adder 1")
 Assert(add10(20) is equal to 30, "Closure adder 2")
 
-# Stateful closure
 Create a function called accumulator with start:
     Set total to start
     Create a function called add_amount with amt:

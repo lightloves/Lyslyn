@@ -9,10 +9,6 @@ class ASTNode:
     column: int
 
 
-# ============================================================================
-# Expressions
-# ============================================================================
-
 class Expr(ASTNode):
     pass
 
@@ -34,7 +30,7 @@ class VariableExpr(Expr):
 @dataclass
 class BinaryExpr(Expr):
     left: Expr
-    operator: str  # '+', '-', '*', '/', '%', '==', '!=', '<', '<=', '>', '>=', 'and', 'or', 'in', 'not in'
+    operator: str
     right: Expr
     line: int
     column: int
@@ -42,7 +38,7 @@ class BinaryExpr(Expr):
 
 @dataclass
 class UnaryExpr(Expr):
-    operator: str  # '-', '+', 'not', 'await'
+    operator: str
     operand: Expr
     line: int
     column: int
@@ -57,7 +53,7 @@ class ListExpr(Expr):
 
 @dataclass
 class MapExpr(Expr):
-    entries: List[Tuple[Expr, Expr]]  # List of (key, value)
+    entries: List[Tuple[Expr, Expr]]
     line: int
     column: int
 
@@ -109,11 +105,6 @@ class ConditionalExpr(Expr):
     column: int
 
 
-
-# ============================================================================
-# Statements
-# ============================================================================
-
 class Stmt(ASTNode):
     pass
 
@@ -127,7 +118,7 @@ class BlockStmt(Stmt):
 
 @dataclass
 class SetStmt(Stmt):
-    target: Expr  # VariableExpr, MemberAccessExpr, or IndexAccessExpr
+    target: Expr
     value: Expr
     is_constant: bool
     line: int
@@ -136,8 +127,8 @@ class SetStmt(Stmt):
 
 @dataclass
 class ChangeStmt(Stmt):
-    target: Expr  # VariableExpr, MemberAccessExpr, or IndexAccessExpr
-    operation: str  # 'increase', 'decrease', 'change'
+    target: Expr
+    operation: str
     value: Expr
     line: int
     column: int
@@ -145,7 +136,6 @@ class ChangeStmt(Stmt):
 
 @dataclass
 class IfStmt(Stmt):
-    # List of (condition, body)
     branches: List[Tuple[Expr, BlockStmt]]
     otherwise_branch: Optional[BlockStmt]
     line: int
@@ -235,14 +225,14 @@ class RaiseStmt(Stmt):
 class ImportStmt(Stmt):
     module_name: str
     alias: Optional[str]
-    imported_names: Optional[List[str]]  # For "From module import x, y"
+    imported_names: Optional[List[str]]
     line: int
     column: int
 
 
 @dataclass
 class HttpStmt(Stmt):
-    method: str  # 'GET', 'POST', 'PUT', 'DELETE', etc.
+    method: str
     url: Expr
     headers: Optional[Expr]
     data: Optional[Expr]
@@ -255,7 +245,7 @@ class HttpStmt(Stmt):
 
 @dataclass
 class RouteStmt(Stmt):
-    method: str  # 'GET', 'POST', 'PUT', 'DELETE', 'PATCH', '*'
+    method: str
     path: str
     body: BlockStmt
     line: int
@@ -272,7 +262,7 @@ class UseMiddlewareStmt(Stmt):
 @dataclass
 class RespondStmt(Stmt):
     status: Expr
-    content_type: str  # 'json', 'text', 'raw'
+    content_type: str
     payload: Expr
     headers: Optional[Expr]
     line: int
@@ -281,7 +271,7 @@ class RespondStmt(Stmt):
 
 @dataclass
 class ValidateStmt(Stmt):
-    target: str  # 'body', 'query', 'params'
+    target: str
     schema: Expr
     line: int
     column: int
@@ -295,7 +285,6 @@ class ServeStmt(Stmt):
     routes: List[RouteStmt]
     line: int
     column: int
-
 
 
 @dataclass

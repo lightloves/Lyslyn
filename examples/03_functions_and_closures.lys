@@ -1,15 +1,9 @@
-# ==============================================================================
-# Example 03: Functions, Parameters, Return Values & Lexical Closures
-# ==============================================================================
-
-# Standard function definition
 Create a function called calculate_area with width, height:
     Return width * height
 
 Set area to calculate_area(8, 5)
 Print "Area of 8x5 rectangle:", area
 
-# Recursive function: Factorial
 Create a function called factorial with n:
     If n is at most 1:
         Return 1
@@ -18,7 +12,6 @@ Create a function called factorial with n:
 Print "Factorial of 5:", factorial(5)
 Print "Factorial of 6:", factorial(6)
 
-# First-class functions and Closures
 Create a function called make_multiplier with factor:
     Create a function called multiply with value:
         Return value * factor
@@ -30,7 +23,6 @@ Set triple to make_multiplier(3)
 Print "Double 15:", double(15)
 Print "Triple 15:", triple(15)
 
-# Stateful closure counter
 Create a function called create_bank_account with initial_balance:
     Set balance to initial_balance
 

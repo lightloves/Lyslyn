@@ -1,8 +1,3 @@
-# ==============================================================================
-# Example 02: Structured English Control Flow
-# ==============================================================================
-
-# Conditionals with English comparisons
 Set score to 85
 
 If score is at least 90:
@@ -14,25 +9,21 @@ Otherwise if score is at least 70:
 Otherwise:
     Print "Grade: Needs improvement"
 
-# While loop with Increase statement
 Print "\n--- Counting Up with While Loop ---"
 Set counter to 1
 While counter is at most 5:
     Print "Counter is at:", counter
     Increase counter by 1
 
-# For-each loop over a list
 Print "\n--- Iterating with For-Each Loop ---"
 Set languages to ["Lyslyn", "Python", "Rust", "TypeScript"]
 For each lang in languages:
     Print "Language option:", lang
 
-# Repeat loop
 Print "\n--- Repeating an Action ---"
 Repeat 3 times:
     Print "Lyslyn is simple and expressive!"
 
-# Break and Continue
 Print "\n--- Loop Control (Break & Continue) ---"
 Set num to 0
 While num < 10:

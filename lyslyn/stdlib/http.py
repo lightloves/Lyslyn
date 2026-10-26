@@ -16,7 +16,6 @@ def request(method: str, url: str, options: Optional[Dict[str, Any]] = None) -> 
     data = options.get("data", None)
     timeout = options.get("timeout", 30)
 
-    # Append query params to URL if provided
     if params:
         url_parts = list(urllib.parse.urlparse(url))
         query = dict(urllib.parse.parse_qsl(url_parts[4]))

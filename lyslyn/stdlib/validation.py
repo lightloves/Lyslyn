@@ -28,7 +28,6 @@ def validate_data(data: Any, schema: Dict[str, Any]) -> Dict[str, Any]:
                 errors.append({"field": field, "issue": f"Field '{field}' is required"})
             continue
 
-        # Type checks
         if "string" in rules and not isinstance(val, str):
             errors.append({"field": field, "issue": f"Field '{field}' must be a string"})
             continue
@@ -50,7 +49,6 @@ def validate_data(data: Any, schema: Dict[str, Any]) -> Dict[str, Any]:
                 errors.append({"field": field, "issue": f"Field '{field}' must be a valid email address"})
                 continue
 
-        # Range checks: min:X, max:X
         for r in rules:
             if r.startswith("min:"):
                 try:

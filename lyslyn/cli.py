@@ -37,7 +37,6 @@ def cmd_run(args: argparse.Namespace) -> int:
     script_args = getattr(args, "script_args", []) or []
 
     try:
-        # Check if pre-compiled bytecode .lysc
         if filepath.endswith(".lysc"):
             with open(filepath, "rb") as f:
                 bytecode_data = f.read()
@@ -46,7 +45,6 @@ def cmd_run(args: argparse.Namespace) -> int:
             vm.run(chunk)
             return 0
 
-        # Standard source execution
         with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
 
@@ -484,10 +482,6 @@ Assert(add(-1, 1) is equal to 0, "Zero sum test")
     return 0
 
 
-# ============================================================================
-# Package Manager Commands
-# ============================================================================
-
 def cmd_pm_add(args: argparse.Namespace) -> int:
     pm = PackageManager()
     pm.add_package(args.package, args.pkg_version, is_dev=args.dev)
@@ -543,19 +537,16 @@ def main() -> None:
     invoked_name = os.path.basename(sys.argv[0]) if sys.argv else "lyslyn"
     prog_name = "lys" if invoked_name in ("lys", "lys.py") else "lyslyn"
 
-    # 1. No arguments provided -> launch interactive REPL (just like `python`)
     if len(sys.argv) <= 1:
         start_repl()
         return
 
     first_arg = sys.argv[1]
 
-    # 2. Version flag
     if first_arg in ("-v", "-V", "--version"):
         print(f"Lyslyn {VERSION}")
         sys.exit(0)
 
-    # 3. Inline code snippet (-c "code") (just like `python -c`)
     if first_arg == "-c":
         if len(sys.argv) < 3:
             print(f"{prog_name}: error: option -c requires an argument", file=sys.stderr)
@@ -564,7 +555,6 @@ def main() -> None:
         script_args = sys.argv[3:]
         sys.exit(cmd_eval(code, script_args))
 
-    # 4. Watch flag (--watch <file> or <file> --watch)
     if "--watch" in sys.argv:
         argv_clean = [a for a in sys.argv[1:] if a != "--watch"]
         if not argv_clean:
@@ -576,8 +566,6 @@ def main() -> None:
         watch_file(target, script_args)
         return
 
-    # 4. If first argument is NOT a subcommand and does NOT start with '-',
-    # it is a script file to execute directly (just like `python script.py [args...]`)
     if first_arg not in KNOWN_SUBCOMMANDS and not first_arg.startswith("-"):
         target = first_arg
         if os.path.isdir(target):
@@ -595,12 +583,10 @@ def main() -> None:
                 print(f"\033[93m💡 Did you mean:\033[0m {prog_name} {suggestion}?")
             sys.exit(1)
 
-        # File exists: Execute immediately with all subsequent arguments passed through
         script_args = sys.argv[2:]
         run_args = argparse.Namespace(file=target, script_args=script_args)
         sys.exit(cmd_run(run_args))
 
-    # 5. Standard argparse subcommands & help handling
     parser = argparse.ArgumentParser(
         prog=prog_name,
         usage=f"{prog_name} [file.lys | -c 'code' | command] [args...]",
@@ -620,64 +606,51 @@ def main() -> None:
 
     subparsers = parser.add_subparsers(dest="command", help="Available industrial commands")
 
-    # run
     run_parser = subparsers.add_parser("run", help="Run a Lyslyn source file or compiled .lysc bytecode")
     run_parser.add_argument("file", help="Path to .lys source file or .lysc bytecode")
     run_parser.add_argument("script_args", nargs="*", help="Arguments passed to the script")
 
-    # watch
     watch_parser = subparsers.add_parser("watch", help="Run a Lyslyn file in live watch mode with hot reloading")
     watch_parser.add_argument("file", help="Path to .lys source file to monitor")
     watch_parser.add_argument("script_args", nargs="*", help="Arguments passed to the script")
 
-    # bundle
     bundle_parser = subparsers.add_parser("bundle", help="Inline all local dependencies into a single distribution file")
     bundle_parser.add_argument("file", help="Entry .lys source file")
     bundle_parser.add_argument("-o", "--output", default="bundle.lys", help="Output bundled filename (default: bundle.lys)")
 
-    # compile
     compile_parser = subparsers.add_parser("compile", help="Compile .lys source code into binary bytecode (.lysc)")
     compile_parser.add_argument("file", help="Path to .lys source file")
     compile_parser.add_argument("-o", "--output", help="Output .lysc file path")
 
-    # disasm
     disasm_parser = subparsers.add_parser("disasm", help="Disassemble Lyslyn source code or compiled bytecode")
     disasm_parser.add_argument("file", help="Path to .lys source file or .lysc bytecode")
 
-    # lint
     lint_parser = subparsers.add_parser("lint", help="Static analysis and lint checks for dead code, unused vars")
     lint_parser.add_argument("path", nargs="?", default=".", help="File or directory to lint")
 
-    # bench
     bench_parser = subparsers.add_parser("bench", help="Run microbenchmarks with iteration and throughput reports")
     bench_parser.add_argument("file", help="Path to .lys benchmark file")
     bench_parser.add_argument("-n", "--iterations", type=int, default=100, help="Number of benchmark iterations")
 
-    # doc
     doc_parser = subparsers.add_parser("doc", help="Generate API documentation from doc-comments")
     doc_parser.add_argument("path", nargs="?", default=".", help="File or directory to generate docs for")
     doc_parser.add_argument("-o", "--output", help="Write documentation to file")
 
-    # check
     check_parser = subparsers.add_parser("check", help="Type-check and validate a Lyslyn file")
     check_parser.add_argument("file", help="Path to .lys source file")
 
-    # format
     fmt_parser = subparsers.add_parser("format", help="Beautify and format Lyslyn source files")
     fmt_parser.add_argument("path", nargs="?", default=".", help="Path to .lys file or directory")
     fmt_parser.add_argument("-w", "--write", action="store_true", help="Write formatted code back in-place")
     fmt_parser.add_argument("--check", action="store_true", help="Check formatting without writing")
     fmt_parser.add_argument("--diff", action="store_true", help="Show colorized diff of formatting changes")
 
-    # test
     test_parser = subparsers.add_parser("test", help="Run Lyslyn test suites")
     test_parser.add_argument("path", nargs="?", default="tests", help="Directory or file containing tests")
 
-    # init
     init_parser = subparsers.add_parser("init", help="Scaffold a new Lyslyn project")
     init_parser.add_argument("name", help="Name of the new project directory")
 
-    # Package Manager (add, remove, install, pack)
     add_parser = subparsers.add_parser("add", help="Add a dependency to lyslyn.json and update lockfile")
     add_parser.add_argument("package", help="Package name")
     add_parser.add_argument("pkg_version", nargs="?", default="1.0.0", help="Package version")
@@ -691,7 +664,6 @@ def main() -> None:
     pack_parser = subparsers.add_parser("pack", help="Bundle project into a distributable .lyspkg archive")
     pack_parser.add_argument("-o", "--output", help="Output package archive filename")
 
-    # repl
     subparsers.add_parser("repl", help="Start the interactive Lyslyn REPL")
 
     args = parser.parse_args()

@@ -17,17 +17,15 @@ HIGHLIGHT_KEYWORDS = {
 
 def highlight_code_line(line: str) -> str:
     """Apply terminal ANSI colors to code snippet line."""
-    c_kw = "\033[95;1m"    # purple bold
-    c_str = "\033[92m"     # green
-    c_num = "\033[96m"     # cyan
-    c_comment = "\033[90m" # gray
+    c_kw = "\033[95;1m"
+    c_str = "\033[92m"
+    c_num = "\033[96m"
+    c_comment = "\033[90m"
     c_reset = "\033[0m"
 
-    # Check for comments
     if line.strip().startswith("#") or line.strip().startswith("//"):
         return f"{c_comment}{line}{c_reset}"
 
-    # Extract strings
     strings = []
     def save_str(m):
         strings.append(m.group(0))
@@ -35,10 +33,8 @@ def highlight_code_line(line: str) -> str:
 
     temp = re.sub(r'("[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')', save_str, line)
 
-    # Highlight numbers
     temp = re.sub(r'\b\d+(\.\d+)?\b', lambda m: f"{c_num}{m.group(0)}{c_reset}", temp)
 
-    # Highlight keywords
     words = re.split(r'(\b[a-zA-Z_][a-zA-Z0-9_]*\b)', temp)
     res = []
     for w in words:
@@ -48,7 +44,6 @@ def highlight_code_line(line: str) -> str:
             res.append(w)
     out = "".join(res)
 
-    # Restore strings with color
     for i, s in enumerate(strings):
         out = out.replace(f"\001{i}\002", f"{c_str}{s}{c_reset}")
 
@@ -99,7 +94,6 @@ class LyslynError(Exception):
                 colored_line = highlight_code_line(line_str) if color else line_str
                 lines.append(f"{c_dim}{line_num_str}{c_reset}{colored_line}")
 
-                # Pointer row
                 padding = " " * (len(line_num_str) + max(0, self.column - 1))
                 pointer = "^" * self.length
                 lines.append(f"{padding}{c_red}{pointer}{c_reset}")

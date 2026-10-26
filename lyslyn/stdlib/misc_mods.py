@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 from ..values import LyslynBuiltin
 
 
-# ==================== TIME ====================
 def time_now() -> str:
     return datetime.now().isoformat()
 
@@ -29,7 +28,6 @@ def export_time_module() -> Dict[str, Any]:
     }
 
 
-# ==================== RANDOM ====================
 def rand_random() -> float:
     return random.random()
 
@@ -55,7 +53,6 @@ def export_random_module() -> Dict[str, Any]:
     }
 
 
-# ==================== ENV ====================
 def _load_dotenv_file(filepath: str = ".env") -> int:
     """Parse and load variables from a .env file into os.environ."""
     if not os.path.isfile(filepath):
@@ -80,7 +77,6 @@ def _load_dotenv_file(filepath: str = ".env") -> int:
         pass
     return count
 
-# Automatically load .env on module import if present
 _load_dotenv_file(".env")
 
 
@@ -131,10 +127,9 @@ def export_env_module() -> Dict[str, Any]:
     }
 
 
-# ==================== LOG ====================
 _LOG_LEVELS = {"debug": 10, "info": 20, "warn": 30, "warning": 30, "error": 40}
 _CURRENT_LOG_LEVEL = 20
-_LOG_FORMAT = "text"  # "text" or "json"
+_LOG_FORMAT = "text"
 
 
 def log_set_level(level: str) -> None:
@@ -157,13 +152,12 @@ def _emit_log(level_name: str, color_code: str, *args: Any) -> None:
         return
 
     now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    
-    # Check if last argument is structured context dict
+
     context = None
     messages = list(args)
     if len(messages) > 1 and isinstance(messages[-1], dict):
         context = messages.pop()
-    
+
     msg_str = " ".join(str(x) for x in messages)
 
     if _LOG_FORMAT == "json":

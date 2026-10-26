@@ -24,7 +24,6 @@ class FileWatcher:
         """Find all .lys and .env files in the project tree to watch."""
         watched = {self.target_file}
         for root, dirs, files in os.walk(self.base_dir):
-            # Skip hidden directories, git, and virtualenvs
             dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("node_modules", "__pycache__", "venv")]
             for f in files:
                 if f.endswith(".lys") or f == ".env" or f == "lyslyn.json":
@@ -34,8 +33,7 @@ class FileWatcher:
     def _has_changes(self) -> Optional[str]:
         """Check if any watched file has changed. Returns filename if changed."""
         watched = self._collect_watched_files()
-        
-        # Check existing and new files
+
         for fpath in watched:
             try:
                 mtime = os.path.getmtime(fpath)
@@ -49,7 +47,6 @@ class FileWatcher:
                 self._file_mtimes[fpath] = mtime
                 return fpath
 
-        # Check deleted files
         deleted = [f for f in self._file_mtimes if f not in watched]
         for f in deleted:
             del self._file_mtimes[f]
@@ -63,7 +60,6 @@ class FileWatcher:
 
         cmd = [sys.executable, "-m", "lyslyn.cli", self.target_file] + self.script_args
         env = dict(os.environ)
-        # Ensure project root is in PYTHONPATH
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(script_dir)
         py_path = env.get("PYTHONPATH", "")
@@ -91,7 +87,6 @@ class FileWatcher:
         print(f"\033[96m👀 [Lyslyn Watcher]\033[0m Monitoring '\033[1m{rel_target}\033[0m' and dependencies...")
         print(f"\033[90mPress Ctrl+C to stop watch mode.\033[0m\n")
 
-        # Initialize timestamps
         for f in self._collect_watched_files():
             try:
                 self._file_mtimes[f] = os.path.getmtime(f)

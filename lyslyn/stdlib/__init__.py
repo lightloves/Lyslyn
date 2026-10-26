@@ -24,7 +24,6 @@ from .misc_mods import (
 
 
 STDLIB_REGISTRY: Dict[str, Dict[str, Any]] = {
-    # Core general-purpose
     "http": http_mod.export_module(),
     "json": json_mod.export_module(),
     "files": files_mod.export_module(),
@@ -37,7 +36,6 @@ STDLIB_REGISTRY: Dict[str, Dict[str, Any]] = {
     "env": export_env_module(),
     "log": export_log_module(),
 
-    # Backend & Server Stack
     "db": db_mod.export_module(),
     "database": db_mod.export_module(),
     "server": server_mod.export_module(),

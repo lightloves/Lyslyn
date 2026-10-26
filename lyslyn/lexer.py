@@ -39,11 +39,9 @@ class Lexer:
             self.token_start_column = self.column
             self.scan_token()
 
-        # Emit newline at EOF if previous token wasn't NEWLINE or DEDENT or empty
         if self.tokens and self.tokens[-1].type not in (TokenType.NEWLINE, TokenType.DEDENT):
             self.tokens.append(Token(TokenType.NEWLINE, "\n", None, self.line, self.column, 1))
 
-        # Close all open indentation blocks at EOF
         while len(self.indent_stack) > 1:
             self.indent_stack.pop()
             self.tokens.append(Token(TokenType.DEDENT, "", None, self.line, self.column, 0))
@@ -56,19 +54,17 @@ class Lexer:
         indent_spaces = 0
         char_idx = self.current
 
-        # Look ahead to count indent
         while char_idx < self.length:
             ch = self.source[char_idx]
             if ch == ' ':
                 indent_spaces += 1
                 char_idx += 1
             elif ch == '\t':
-                indent_spaces += 4  # standard 4-space tab expansion
+                indent_spaces += 4
                 char_idx += 1
             else:
                 break
 
-        # Check if line is empty or comment-only
         is_empty_or_comment = False
         if char_idx >= self.length or self.source[char_idx] in ('\r', '\n'):
             is_empty_or_comment = True
@@ -78,19 +74,16 @@ class Lexer:
             is_empty_or_comment = True
 
         if is_empty_or_comment:
-            # Advance through whitespace to the newline
             while self.current < char_idx:
                 self.advance()
             self.at_line_start = False
             return
 
-        # Advance past the indentation whitespace
         while self.current < char_idx:
             self.advance()
 
         self.at_line_start = False
 
-        # Only emit INDENT/DEDENT if outside brackets/parens/braces
         if self.bracket_depth == 0:
             current_indent = self.indent_stack[-1]
             if indent_spaces > current_indent:
@@ -118,20 +111,16 @@ class Lexer:
     def scan_token(self) -> None:
         c = self.advance()
 
-        # Whitespace within line
         if c in (' ', '\t', '\r'):
             return
 
-        # Newline
         if c == '\n':
             if self.bracket_depth == 0:
-                # Avoid duplicate newlines
                 if not self.tokens or self.tokens[-1].type != TokenType.NEWLINE:
                     self.add_token(TokenType.NEWLINE)
             self.at_line_start = True
             return
 
-        # Comments
         if c == '#':
             while self.peek() != '\n' and not self.is_at_end():
                 self.advance()
@@ -143,11 +132,10 @@ class Lexer:
             return
 
         if c == '/' and self.peek() == '*':
-            self.advance()  # consume '*'
+            self.advance()
             self.scan_multiline_comment()
             return
 
-        # Operators & delimiters
         if c == '(':
             self.bracket_depth += 1
             self.add_token(TokenType.LPAREN)
@@ -206,15 +194,12 @@ class Lexer:
             else:
                 self.add_token(TokenType.GREATER_THAN)
 
-        # Strings
         elif c in ('"', "'"):
             self.scan_string(c)
 
-        # Numbers
         elif c.isdigit():
             self.scan_number()
 
-        # Identifiers & Keywords
         elif c.isalpha() or c == '_':
             self.scan_identifier()
 
@@ -233,8 +218,8 @@ class Lexer:
         start_col = self.token_start_column
         while not self.is_at_end():
             if self.peek() == '*' and self.peek_next() == '/':
-                self.advance()  # '*'
-                self.advance()  # '/'
+                self.advance()
+                self.advance()
                 return
             if self.peek() == '\n':
                 self.line += 1
@@ -253,7 +238,6 @@ class Lexer:
         start_line = self.line
         start_col = self.token_start_column
 
-        # Check for triple-quote
         is_triple = False
         if self.peek() == quote_char and self.peek_next() == quote_char:
             self.advance()
@@ -332,11 +316,10 @@ class Lexer:
         is_float = False
         if self.peek() == '.' and self.peek_next().isdigit():
             is_float = True
-            self.advance()  # consume '.'
+            self.advance()
             while self.peek().isdigit() or self.peek() == '_':
                 self.advance()
 
-        # Scientific notation: e.g. 1e5, 2.5e-3
         if self.peek() in ('e', 'E'):
             is_float = True
             self.advance()
@@ -358,7 +341,6 @@ class Lexer:
         text = self.source[self.start:self.current]
         lower_text = text.lower()
 
-        # Check keyword
         token_type = KEYWORDS.get(lower_text, TokenType.IDENTIFIER)
         literal = None
         if token_type == TokenType.TRUE:

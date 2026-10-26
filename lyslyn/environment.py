@@ -28,7 +28,6 @@ class Environment:
             self.parent.assign(name, value)
             return
 
-        # If not found in any scope, define in current scope
         self.values[name] = value
 
     def get(self, name: str) -> Any:

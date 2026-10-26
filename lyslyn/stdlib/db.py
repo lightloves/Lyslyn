@@ -16,10 +16,8 @@ class DatabaseManager:
         if not hasattr(self._local, "connections"):
             self._local.connections = {}
         if db_path not in self._local.connections:
-            # Enable row factory for dictionary-like column access
             conn = sqlite3.connect(db_path, check_same_thread=False)
             conn.row_factory = sqlite3.Row
-            # Enable foreign keys and WAL mode for production concurrency
             conn.execute("PRAGMA foreign_keys = ON;")
             if db_path != ":memory:":
                 try:
@@ -185,7 +183,6 @@ class DatabaseManager:
         return [params]
 
 
-# Global singleton instance
 _db_manager = DatabaseManager()
 
 

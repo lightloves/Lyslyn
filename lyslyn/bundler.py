@@ -18,7 +18,6 @@ class Bundler:
         self.base_dir = os.path.dirname(self.entry_file)
         self.visited_files: Set[str] = set()
         self.module_order: List[str] = []
-        # Map: norm_path -> set of aliases
         self.aliases: Dict[str, Set[str]] = {}
 
     def _extract_local_imports(self, filepath: str) -> List[Tuple[str, str, List[str]]]:
@@ -107,7 +106,6 @@ class Bundler:
 
         seen_stdlib_imports: Set[str] = set()
 
-        # Step 1: Collect standard library imports from all modules
         for mod_path in self.module_order:
             with open(mod_path, "r", encoding="utf-8") as f:
                 for line in f:
@@ -121,7 +119,6 @@ class Bundler:
                 bundle_lines.append(imp)
             bundle_lines.append("")
 
-        # Step 2: Append modules in topological order
         entry_norm = os.path.normpath(self.entry_file)
         for mod_path in self.module_order:
             is_entry = (mod_path == entry_norm)
@@ -132,15 +129,12 @@ class Bundler:
             with open(mod_path, "r", encoding="utf-8") as f:
                 for line in f:
                     stripped = line.strip()
-                    # Skip local file imports in the bundle
                     if (stripped.startswith("Import ") or stripped.startswith("From ")) and ('"' in stripped or "'" in stripped):
                         continue
-                    # Skip top-level stdlib imports already added
                     if stripped.startswith("Import ") and not ('"' in stripped or "'" in stripped):
                         continue
                     bundle_lines.append(line.rstrip())
 
-            # For non-entry imported modules, construct namespace dictionaries
             if not is_entry:
                 exports = self._extract_module_exports(mod_path)
                 aliases = self.aliases.get(mod_path, {mod_name})

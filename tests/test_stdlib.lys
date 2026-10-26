@@ -1,31 +1,25 @@
-# Unit tests: Standard Library Modules
-
 Import math
 Import text
 Import json
 Import files
 
-# Math
 Assert(math.sqrt(25) is equal to 5, "math.sqrt")
 Assert(math.floor(4.9) is equal to 4, "math.floor")
 Assert(math.ceil(4.1) is equal to 5, "math.ceil")
 Assert(math.abs( - 42) is equal to 42, "math.abs")
 
-# Text
 Set original to "  hello world  "
 Assert(text.trim(original) is equal to "hello world", "text.trim")
 Assert(text.uppercase("lyslyn") is equal to "LYSLYN", "text.uppercase")
 Assert(text.starts_with("compiler", "comp") is equal to true, "text.starts_with")
 Assert(text.ends_with("compiler", "ler") is equal to true, "text.ends_with")
 
-# JSON
 Set data to {"key": "val", "num": 123}
 Set encoded to json.stringify(data)
 Set decoded to json.parse(encoded)
 Assert(decoded.key is equal to "val", "json roundtrip key")
 Assert(decoded.num is equal to 123, "json roundtrip num")
 
-# Files
 Set tmp_path to "./test_tmp.txt"
 files.write_text(tmp_path, "Testing files module")
 Assert(files.exists(tmp_path) is equal to true, "files.exists true")

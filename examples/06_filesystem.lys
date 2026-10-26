@@ -1,7 +1,3 @@
-# ==============================================================================
-# Example 06: Filesystem Operations with the Files Module
-# ==============================================================================
-
 Import files
 Import json
 
@@ -16,15 +12,12 @@ Set app_state to {
     "features": ["English Syntax", "Bytecode VM Ready", "Batteries Included"]
 }
 
-# Serialize to JSON and write to disk
 Set json_data to json.stringify(app_state, 2)
 files.write_text(file_path, json_data)
 
-# Verify existence
 If files.exists(file_path):
     Print "File successfully written to disk!"
 
-# Read back from disk
 Set loaded_raw to files.read_text(file_path)
 Set loaded_obj to json.parse(loaded_raw)
 
@@ -32,6 +25,5 @@ Print "\nLoaded from file:"
 Print "  App Name:", loaded_obj.app
 Print "  Features count:", loaded_obj.features.length
 
-# Clean up temporary demo file
 files.delete(file_path)
 Print "Cleaned up demo file. Exists now?:", files.exists(file_path)

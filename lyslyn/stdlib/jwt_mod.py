@@ -30,7 +30,7 @@ def _b64url_decode(s: str) -> bytes:
 
 def jwt_sign(payload: Dict[str, Any], secret: str, expires_in: Optional[int] = 3600) -> str:
     """Sign a JWT token with HMAC-SHA256.
-    
+
     Args:
         payload: Dictionary of claims to include.
         secret: Signing key.
@@ -38,14 +38,14 @@ def jwt_sign(payload: Dict[str, Any], secret: str, expires_in: Optional[int] = 3
     """
     if not isinstance(payload, dict):
         raise RuntimeError_(f"JWT payload must be an object/dict, got {type(payload).__name__}")
-    
+
     header = {"alg": "HS256", "typ": "JWT"}
     payload_copy = dict(payload)
-    
+
     now = int(time.time())
     if "iat" not in payload_copy:
         payload_copy["iat"] = now
-    
+
     if expires_in and expires_in > 0:
         payload_copy["exp"] = now + int(expires_in)
 
@@ -68,7 +68,7 @@ def jwt_sign(payload: Dict[str, Any], secret: str, expires_in: Optional[int] = 3
 
 def jwt_verify(token: str, secret: str) -> Dict[str, Any]:
     """Verify a JWT signature and validate standard claims (exp, nbf).
-    
+
     Returns decoded payload if valid, or raises an error.
     """
     token_str = str(token).strip()
@@ -78,7 +78,6 @@ def jwt_verify(token: str, secret: str) -> Dict[str, Any]:
 
     header_b64, payload_b64, sig_b64 = parts
 
-    # 1. Verify Signature
     signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
     expected_sig = hmac.new(
         str(secret).encode("utf-8"),
@@ -90,14 +89,12 @@ def jwt_verify(token: str, secret: str) -> Dict[str, Any]:
     if not hmac.compare_digest(sig_b64, expected_sig_b64):
         raise RuntimeError_("JWT verification failed: Invalid signature")
 
-    # 2. Decode payload
     try:
         payload_bytes = _b64url_decode(payload_b64)
         payload = json.loads(payload_bytes.decode("utf-8"))
     except Exception as e:
         raise RuntimeError_(f"JWT error: Failed to decode payload JSON: {e}")
 
-    # 3. Validate claims
     now = int(time.time())
     if "exp" in payload and isinstance(payload["exp"], (int, float)):
         if now > payload["exp"]:

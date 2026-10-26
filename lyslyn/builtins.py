@@ -97,7 +97,6 @@ def get_global_builtins() -> Dict[str, Any]:
         "zip": LyslynBuiltin("zip", zip_fn, arity=2),
         "find": LyslynBuiltin("find", find_fn, arity=2),
     }
-    # Provide TitleCase aliases for natural English styling
     title_aliases = {
         "Assert": b["assert"],
         "Print": b["print"],

@@ -1,11 +1,7 @@
-# Unit tests: Production SQLite Database & ORM Engine
-
 Import db
 
-# Connect to in-memory test database
 db.connect(":memory:")
 
-# Create table
 db.create_table("users", {
     "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
     "name": "TEXT NOT NULL",
@@ -16,7 +12,6 @@ db.create_table("users", {
 
 Assert(db.table_exists("users") is equal to true, "Table users created")
 
-# Insert records
 Set user1 to db.insert("users", {
     "name": "Raj",
     "email": "raj@lyslyn.org",
@@ -32,28 +27,23 @@ Set user2 to db.insert("users", {
 })
 Assert(user2.id is equal to 2, "Second user ID")
 
-# Count
 Set total_users to db.count("users")
 Assert(total_users is equal to 2, "Total users count is 2")
 
-# Find & Find One
 Set found to db.find_one("users", {"email": "raj@lyslyn.org"})
 Assert(found.name is equal to "Raj", "Find one by email")
 Assert(found.role is equal to "admin", "Find one role")
 
-# Update
 Set rows_updated to db.update("users", {"id": 2}, {"role": "lead_engineer"})
 Assert(rows_updated is equal to 1, "Rows updated")
 
 Set updated_user to db.find_one("users", {"id": 2})
 Assert(updated_user.role is equal to "lead_engineer", "Updated role check")
 
-# Custom SQL Query
 Set admins to db.query("SELECT * FROM users WHERE role = ?", ["admin"])
 Assert(admins.length is equal to 1, "Admins query count")
 Assert(admins[0].name is equal to "Raj", "Admin name")
 
-# Delete
 Set rows_deleted to db.delete("users", {"id": 2})
 Assert(rows_deleted is equal to 1, "Rows deleted")
 Assert(db.count("users") is equal to 1, "Count after delete is 1")

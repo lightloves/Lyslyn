@@ -1,19 +1,12 @@
-# ==============================================================================
-# Example 04: Collections (Lists & Objects/Maps)
-# ==============================================================================
-
-# Lists
 Set fruits to ["Apple", "Banana", "Cherry"]
 Print "Original list:", fruits
 Print "First fruit:", fruits[0]
 Print "Last fruit:", fruits[ - 1]
 
-# Appending to lists
 append(fruits, "Dragonfruit")
 Print "After append:", fruits
 Print "Fruit count:", fruits.length
 
-# Dictionaries / Objects
 Set user to {
     "name": "Raj",
     "role": "Lead Architect",
@@ -25,7 +18,6 @@ Print "User name:", user.name
 Print "User role:", user["role"]
 Print "Primary skill:", user.skills[0]
 
-# Modifying object properties
 Set user.role to "Principal Language Engineer"
 Set user["status"] to "Active"
 
@@ -35,7 +27,6 @@ Print "  Role:", user.role
 Print "  Status:", user.status
 Print "  Keys in user object:", user.keys()
 
-# List of Objects
 Set team to [
     {"name": "Alice", "score": 92},
     {"name": "Bob", "score": 88},

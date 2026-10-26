@@ -34,7 +34,7 @@ def reduce_fn(items: List[Any], fn: Any, initial: Any = None) -> Any:
         raise RuntimeError_(f"Reduce expects a list, got {type(items).__name__}")
     if not items and initial is None:
         raise RuntimeError_("Reduce on empty list with no initial value")
-    
+
     it = iter(items)
     acc = initial if initial is not None else next(it)
     for item in it:
@@ -65,7 +65,6 @@ def unique_fn(items: List[Any]) -> List[Any]:
     seen = set()
     result = []
     for item in items:
-        # If unhashable (dict/list), check membership linearly
         try:
             if item not in seen:
                 seen.add(item)

@@ -27,7 +27,7 @@ class Compiler:
         self.chunk: Chunk = Chunk("<main>")
         self.locals: List[Local] = []
         self.scope_depth: int = 0
-        self.loop_stack: List[Tuple[int, List[int]]] = []  # (loop_start, break_jump_offsets)
+        self.loop_stack: List[Tuple[int, List[int]]] = []
 
     def compile(self, program: Program) -> Chunk:
         self.chunk = Chunk("<main>")
@@ -41,9 +41,6 @@ class Compiler:
         self.emit_byte(OpCode.OP_HALT, program.line)
         return self.chunk
 
-    # ========================================================================
-    # Statements
-    # ========================================================================
 
     def compile_stmt(self, stmt: Stmt) -> None:
         if isinstance(stmt, BlockStmt):
@@ -103,14 +100,12 @@ class Compiler:
 
         if isinstance(target, VariableExpr):
             if self.scope_depth > 0:
-                # Local variable
                 local_idx = self.resolve_local(target.name)
                 if local_idx is not None:
                     self.emit_bytes(OpCode.OP_SET_LOCAL, local_idx, stmt.line)
                 else:
                     self.add_local(target.name)
             else:
-                # Global variable
                 const_idx = self.chunk.add_constant(target.name)
                 self.emit_bytes(OpCode.OP_DEF_GLOBAL, const_idx, stmt.line)
 
@@ -127,7 +122,6 @@ class Compiler:
 
     def compile_change(self, stmt: ChangeStmt) -> None:
         target = stmt.target
-        # Push current target value
         if isinstance(target, VariableExpr):
             local_idx = self.resolve_local(target.name) if self.scope_depth > 0 else None
             if local_idx is not None:
@@ -138,14 +132,12 @@ class Compiler:
         else:
             self.compile_expr(target)
 
-        # Push delta and apply operation
         self.compile_expr(stmt.value)
         if stmt.operation == "increase":
             self.emit_byte(OpCode.OP_ADD, stmt.line)
         elif stmt.operation == "decrease":
             self.emit_byte(OpCode.OP_SUB, stmt.line)
 
-        # Write back to target
         if isinstance(target, VariableExpr):
             if local_idx is not None:
                 self.emit_bytes(OpCode.OP_SET_LOCAL, local_idx, stmt.line)
@@ -159,7 +151,7 @@ class Compiler:
         for cond_expr, body in stmt.branches:
             self.compile_expr(cond_expr)
             jump_false = self.emit_jump(OpCode.OP_JUMP_IF_FALSE, stmt.line)
-            self.emit_byte(OpCode.OP_POP, stmt.line)  # Pop condition if truthy
+            self.emit_byte(OpCode.OP_POP, stmt.line)
 
             self.compile_stmt(body)
 
@@ -167,7 +159,7 @@ class Compiler:
             else_jumps.append(jump_end)
 
             self.patch_jump(jump_false)
-            self.emit_byte(OpCode.OP_POP, stmt.line)  # Pop condition if falsy
+            self.emit_byte(OpCode.OP_POP, stmt.line)
 
         if stmt.otherwise_branch:
             self.compile_stmt(stmt.otherwise_branch)
@@ -194,7 +186,6 @@ class Compiler:
             self.patch_jump(bj)
 
     def compile_repeat(self, stmt: RepeatStmt) -> None:
-        # Desugar repeat N times into while loop with internal counter
         self.begin_scope()
         self.compile_expr(stmt.count)
         count_slot = self.add_local("__count")
@@ -216,7 +207,6 @@ class Compiler:
 
         self.compile_stmt(stmt.body)
 
-        # Increment __i
         self.emit_bytes(OpCode.OP_GET_LOCAL, iter_slot, stmt.line)
         self.emit_bytes(OpCode.OP_CONSTANT, self.chunk.add_constant(1), stmt.line)
         self.emit_byte(OpCode.OP_ADD, stmt.line)
@@ -233,7 +223,6 @@ class Compiler:
         self.end_scope(stmt.line)
 
     def compile_for(self, stmt: ForStmt) -> None:
-        # Desugar for-in: evaluates iterable, indexes from 0 to len
         self.begin_scope()
         self.compile_expr(stmt.iterable)
         list_slot = self.add_local("__list")
@@ -241,14 +230,12 @@ class Compiler:
         self.emit_bytes(OpCode.OP_CONSTANT, self.chunk.add_constant(0), stmt.line)
         idx_slot = self.add_local("__idx")
 
-        # Local variable for current item
         self.emit_byte(OpCode.OP_NIL, stmt.line)
         item_slot = self.add_local(stmt.variable)
 
         loop_start = len(self.chunk.code)
         self.loop_stack.append((loop_start, []))
 
-        # Check: idx < list.length
         self.emit_bytes(OpCode.OP_GET_LOCAL, idx_slot, stmt.line)
         self.emit_bytes(OpCode.OP_GET_LOCAL, list_slot, stmt.line)
         const_len = self.chunk.add_constant("length")
@@ -259,7 +246,6 @@ class Compiler:
         exit_jump = self.emit_jump(OpCode.OP_JUMP_IF_FALSE, stmt.line)
         self.emit_byte(OpCode.OP_POP, stmt.line)
 
-        # Set item = list[idx]
         self.emit_bytes(OpCode.OP_GET_LOCAL, list_slot, stmt.line)
         self.emit_bytes(OpCode.OP_GET_LOCAL, idx_slot, stmt.line)
         self.emit_byte(OpCode.OP_INDEX_GET, stmt.line)
@@ -267,7 +253,6 @@ class Compiler:
 
         self.compile_stmt(stmt.body)
 
-        # Increment idx
         self.emit_bytes(OpCode.OP_GET_LOCAL, idx_slot, stmt.line)
         self.emit_bytes(OpCode.OP_CONSTANT, self.chunk.add_constant(1), stmt.line)
         self.emit_byte(OpCode.OP_ADD, stmt.line)
@@ -288,14 +273,12 @@ class Compiler:
         sub_compiler.chunk.name = stmt.name
         sub_compiler.scope_depth = 1
 
-        # Parameters are the first local variables
         for param in stmt.params:
             sub_compiler.add_local(param)
 
         for s in stmt.body.statements:
             sub_compiler.compile_stmt(s)
 
-        # Implicit return nil
         sub_compiler.emit_byte(OpCode.OP_NIL, stmt.line)
         sub_compiler.emit_byte(OpCode.OP_RETURN, stmt.line)
 
@@ -318,9 +301,6 @@ class Compiler:
             self.emit_byte(OpCode.OP_NIL, stmt.line)
         self.emit_byte(OpCode.OP_RETURN, stmt.line)
 
-    # ========================================================================
-    # Expressions
-    # ========================================================================
 
     def compile_expr(self, expr: Expr) -> None:
         if isinstance(expr, LiteralExpr):
@@ -381,7 +361,6 @@ class Compiler:
             self.emit_bytes(OpCode.OP_BUILD_MAP, len(expr.entries), expr.line)
 
         elif isinstance(expr, StringInterpolationExpr):
-            # Concatenate all parts with +
             if not expr.parts:
                 self.emit_bytes(OpCode.OP_CONSTANT, self.chunk.add_constant(""), expr.line)
                 return
@@ -453,9 +432,6 @@ class Compiler:
             self.emit_byte(OpCode.OP_GREATER, expr.line)
             self.emit_byte(OpCode.OP_NOT, expr.line)
 
-    # ========================================================================
-    # Helpers
-    # ========================================================================
 
     def emit_byte(self, byte_val: int, line: int) -> int:
         return self.chunk.write(byte_val, line)

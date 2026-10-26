@@ -23,7 +23,6 @@ def start_repl() -> None:
     print(BANNER)
     interp = Interpreter(filename="<repl>")
 
-    # Enable readline history if available
     try:
         import readline
         histfile = os.path.expanduser("~/.lyslyn_history")
@@ -49,7 +48,6 @@ def start_repl() -> None:
 
             stripped = line.strip()
 
-            # Handle REPL meta-commands
             if not buffer_lines and stripped.startswith("."):
                 cmd = stripped.lower()
                 if cmd in (".exit", ".quit"):
@@ -77,14 +75,11 @@ Lyslyn REPL Commands:
                     print(f"Unknown command '{cmd}'. Type .help for commands.")
                     continue
 
-            # Handle multi-line blocks
             buffer_lines.append(line)
 
-            # If line ends with ':' or has indentation, wait for more lines
             if line.rstrip().endswith(":"):
                 continue
 
-            # If in multi-line block, keep going until an empty line is entered
             if len(buffer_lines) > 1 and stripped != "":
                 continue
 
@@ -94,18 +89,15 @@ Lyslyn REPL Commands:
             if not source.strip():
                 continue
 
-            # First try parsing as an expression statement or statement
             lexer = Lexer(source, filename="<repl>")
             tokens = lexer.tokenize()
             parser = Parser(tokens, filename="<repl>", source=source)
             program = parser.parse()
 
-            # Execute program
             result = None
             for stmt in program.statements:
                 result = interp.execute(stmt)
 
-            # If the last statement was an expression statement, display result
             from .ast_nodes import ExprStmt
             if program.statements and isinstance(program.statements[-1], ExprStmt) and result is not None:
                 print(f"=> {interp.stringify_val(result)}")

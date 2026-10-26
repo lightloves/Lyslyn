@@ -1,7 +1,3 @@
-# ==============================================================================
-# Example 09: Real-World Application — Task Management System
-# ==============================================================================
-
 Import files
 Import json
 Import time
@@ -63,7 +59,6 @@ Create a function called list_tasks:
             Print "  {status_mark} #{t.id}: {t.title} (Priority: {t.priority})"
     Print "===================================================\n"
 
-# Run application simulation
 init_db()
 
 Print "--- Initializing Task System ---"
@@ -82,6 +77,5 @@ complete_task(3)
 
 list_tasks()
 
-# Cleanup temporary database
 files.delete(db_file)
 Print "✓ Demo completed and database cleaned up."

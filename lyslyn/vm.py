@@ -20,7 +20,6 @@ class VM:
         self.frames: List[CallFrame] = []
         self.globals: Dict[str, Any] = {}
 
-        # Initialize globals with standard built-ins
         for name, fn in get_global_builtins().items():
             self.globals[name] = fn
         self.globals["args"] = script_args or []
@@ -35,7 +34,6 @@ class VM:
             instruction = frame.chunk.code[frame.ip]
             frame.ip += 1
 
-            # Constants & Literals
             if instruction == OpCode.OP_CONSTANT:
                 const_idx = frame.chunk.code[frame.ip]
                 frame.ip += 1
@@ -57,7 +55,6 @@ class VM:
             elif instruction == OpCode.OP_DUP:
                 self.stack.append(self.stack[-1])
 
-            # Globals
             elif instruction == OpCode.OP_DEF_GLOBAL:
                 const_idx = frame.chunk.code[frame.ip]
                 frame.ip += 1
@@ -80,7 +77,6 @@ class VM:
                 name = frame.chunk.constants[const_idx]
                 self.globals[name] = self.stack[-1]
 
-            # Locals
             elif instruction == OpCode.OP_GET_LOCAL:
                 slot = frame.chunk.code[frame.ip]
                 frame.ip += 1
@@ -91,7 +87,6 @@ class VM:
                 frame.ip += 1
                 self.stack[frame.slots_offset + slot] = self.stack[-1]
 
-            # Arithmetic
             elif instruction == OpCode.OP_ADD:
                 b = self.stack.pop()
                 a = self.stack.pop()
@@ -133,7 +128,6 @@ class VM:
             elif instruction == OpCode.OP_NEG:
                 self.stack[-1] = -self.stack[-1]
 
-            # Comparisons & Logic
             elif instruction == OpCode.OP_EQUAL:
                 b = self.stack.pop()
                 a = self.stack.pop()
@@ -153,7 +147,6 @@ class VM:
                 val = self.stack.pop()
                 self.stack.append(not bool(val))
 
-            # Jumps
             elif instruction == OpCode.OP_JUMP:
                 offset = (frame.chunk.code[frame.ip] << 8) | frame.chunk.code[frame.ip + 1]
                 frame.ip += 2 + offset
@@ -168,7 +161,6 @@ class VM:
                 offset = (frame.chunk.code[frame.ip] << 8) | frame.chunk.code[frame.ip + 1]
                 frame.ip += 2 - offset
 
-            # Data structures
             elif instruction == OpCode.OP_BUILD_LIST:
                 count = frame.chunk.code[frame.ip]
                 frame.ip += 1
@@ -211,7 +203,6 @@ class VM:
                     setattr(target, str(idx), val)
                 self.stack.append(val)
 
-            # Print & Output
             elif instruction == OpCode.OP_PRINT:
                 count = frame.chunk.code[frame.ip]
                 frame.ip += 1
@@ -220,7 +211,6 @@ class VM:
                 print(*args)
                 self.stack.append(None)
 
-            # Calls & Returns
             elif instruction == OpCode.OP_CALL:
                 arg_count = frame.chunk.code[frame.ip]
                 frame.ip += 1
@@ -251,7 +241,6 @@ class VM:
                 ret_val = self.stack.pop()
                 finished_frame = self.frames.pop()
 
-                # Restore stack to slots_offset
                 while len(self.stack) > finished_frame.slots_offset:
                     self.stack.pop()
 

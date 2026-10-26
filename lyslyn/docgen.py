@@ -27,9 +27,8 @@ def extract_docs(filepath: str) -> List[DocItem]:
     docs: List[DocItem] = []
 
     def get_preceding_doc(line_idx: int) -> str:
-        # Scan backward from line_idx for comment lines
         doc_lines = []
-        i = line_idx - 2  # 0-indexed preceding line
+        i = line_idx - 2
         while i >= 0:
             l = lines[i].strip()
             if l.startswith("///") or l.startswith("#"):

@@ -16,7 +16,6 @@ from .ast_nodes import (
 from .diagnostics import ParseError
 
 
-# Set of tokens that can be accepted as identifiers in context
 CONTEXTUAL_IDENTIFIER_TYPES = {
     TokenType.IDENTIFIER,
     TokenType.DATA,
@@ -62,7 +61,6 @@ class Parser:
 
     def consume_property_name(self, message: str) -> Token:
         tok = self.peek()
-        # Any valid identifier or keyword can be accessed as a member property (e.g. cache.set, obj.type)
         if tok.lexeme and tok.lexeme.isidentifier():
             return self.advance()
         if self.is_identifier_like(tok):
@@ -80,14 +78,10 @@ class Parser:
             self.skip_newlines()
         return Program(statements=statements)
 
-    # ========================================================================
-    # Statement Parsing
-    # ========================================================================
 
     def statement(self) -> Stmt:
         self.skip_newlines()
 
-        # Variable declarations & assignments
         if self.match(TokenType.SET, TokenType.LET):
             return self.set_statement()
 
@@ -95,11 +89,10 @@ class Parser:
             return self.constant_statement()
 
         if self.check(TokenType.DEFINE) and self.check_next(TokenType.CONSTANT):
-            self.advance()  # 'define'
-            self.advance()  # 'constant'
+            self.advance()
+            self.advance()
             return self.constant_statement()
 
-        # Change / Increase / Decrease
         if self.match(TokenType.INCREASE):
             return self.change_statement("increase")
         if self.match(TokenType.DECREASE):
@@ -107,7 +100,6 @@ class Parser:
         if self.match(TokenType.CHANGE):
             return self.change_statement("change")
 
-        # Control flow
         if self.match(TokenType.IF):
             return self.if_statement()
 
@@ -120,7 +112,6 @@ class Parser:
         if self.match(TokenType.REPEAT):
             return self.repeat_statement()
 
-        # 'Do this 5 times:' or 'Do 5 times:'
         if self.check_identifier("do"):
             start_pos = self.current
             do_tok = self.advance()
@@ -136,7 +127,6 @@ class Parser:
                 pass
             self.current = start_pos
 
-        # Functions
         if self.match(TokenType.ASYNC):
             return self.function_statement(is_async=True)
 
@@ -155,7 +145,6 @@ class Parser:
             raise self.error(self.previous(), "Expected 'function' or 'constant' after 'define'")
 
         if self.match(TokenType.CREATE):
-            # 'Create a function called ...'
             if self.check_identifier("a") or self.check_identifier("an"):
                 self.advance()
             self.consume(TokenType.FUNCTION, "Expected 'function' after 'create'")
@@ -163,7 +152,6 @@ class Parser:
                 pass
             return self.function_statement(is_async=False)
 
-        # Return, Give back
         if self.match(TokenType.RETURN):
             return self.return_statement()
 
@@ -178,7 +166,6 @@ class Parser:
                 return ReturnStmt(value=val, line=give_tok.line, column=give_tok.column)
             self.current -= 1
 
-        # Break, Stop the loop
         if self.match(TokenType.BREAK):
             return self.break_statement()
 
@@ -191,7 +178,6 @@ class Parser:
             self.consume_statement_end()
             return BreakStmt(line=stop_tok.line, column=stop_tok.column)
 
-        # Continue, Skip to next
         if self.match(TokenType.CONTINUE):
             return self.continue_statement()
 
@@ -204,25 +190,21 @@ class Parser:
             self.consume_statement_end()
             return ContinueStmt(line=skip_tok.line, column=skip_tok.column)
 
-        # Error Handling
         if self.match(TokenType.TRY):
             return self.try_statement()
 
         if self.match(TokenType.RAISE, TokenType.THROW):
             return self.raise_statement()
 
-        # Modules
         if self.match(TokenType.IMPORT):
             return self.import_statement()
 
         if self.match(TokenType.FROM):
             return self.from_import_statement()
 
-        # Network / HTTP
         if self.match(TokenType.SEND):
             return self.http_statement()
 
-        # Backend Server & Routing
         if self.match(TokenType.SERVE):
             return self.serve_statement()
 
@@ -238,13 +220,11 @@ class Parser:
         if self.match(TokenType.VALIDATE):
             return self.validate_statement()
 
-        # I/O: Print / Display / Show
         if self.match(TokenType.PRINT) or self.check_identifier("display") or self.check_identifier("show"):
             if self.previous().type != TokenType.PRINT:
                 self.advance()
             return self.print_statement()
 
-        # Ask: 'Ask "Enter name: " and save as username'
         if self.match(TokenType.ASK):
             ask_tok = self.previous()
             prompt_expr = None
@@ -261,7 +241,6 @@ class Parser:
             ask_call = AskExpr(prompt_expr, ask_tok.line, ask_tok.column)
             return SetStmt(target=VariableExpr(var_tok.lexeme, var_tok.line, var_tok.column), value=ask_call, is_constant=False, line=ask_tok.line, column=ask_tok.column)
 
-        # List operation: 'Add "item" to items' / 'Append "item" to items'
         if self.check_identifier("add") or self.check_identifier("append"):
             start_pos = self.current
             kw = self.advance()
@@ -275,13 +254,11 @@ class Parser:
                     return ExprStmt(append_call, kw.line, kw.column)
             except Exception:
                 pass
-            self.current = start_pos  # backtrack if not matching pattern
+            self.current = start_pos
 
-        # Assertion
         if self.match(TokenType.ASSERT):
             return self.assert_statement()
 
-        # Run / Call / Execute: 'Run greet with "Raj"' or 'Call greet with "Raj" and 25'
         if self.check_identifier("run") or self.check_identifier("call") or self.check_identifier("execute"):
             run_tok = self.advance()
             callee_name = self.consume_identifier("Expected function name")
@@ -294,7 +271,6 @@ class Parser:
             self.consume_statement_end()
             return ExprStmt(CallExpr(callee, args, run_tok.line, run_tok.column), run_tok.line, run_tok.column)
 
-        # Expression statement
         return self.expression_statement()
 
     def set_statement(self) -> SetStmt:
@@ -543,7 +519,6 @@ class Parser:
 
     def http_statement(self) -> HttpStmt:
         keyword = self.previous()
-        # 'Send a POST request to "url"...'
         if self.check_identifier("a") or self.check_identifier("an"):
             self.advance()
 
@@ -560,9 +535,7 @@ class Parser:
         timeout: Optional[Expr] = None
         response_var: str = "response"
 
-        # Check for block form or inline form
         if self.match(TokenType.COLON):
-            # Block form:
             self.consume(TokenType.NEWLINE, "Expected newline after ':' in HTTP statement")
             self.consume(TokenType.INDENT, "Expected indented block for HTTP options")
 
@@ -618,7 +591,6 @@ class Parser:
             self.consume(TokenType.DEDENT, "Expected dedent after HTTP request block")
 
         else:
-            # Inline form: e.g. 'Send a GET request to url save response as resp'
             if self.match(TokenType.SAVE):
                 if self.check_identifier("the"):
                     self.advance()
@@ -836,9 +808,6 @@ class Parser:
         self.consume(TokenType.DEDENT, "Expected dedent at end of block")
         return BlockStmt(statements=stmts, line=start_tok.line, column=start_tok.column)
 
-    # ========================================================================
-    # Expression Parsing (Precedence Climbing)
-    # ========================================================================
 
     def expression(self) -> Expr:
         return self.logic_or()
@@ -870,7 +839,6 @@ class Parser:
         expr = self.term()
 
         while True:
-            # Symbol comparisons
             if self.match(
                 TokenType.EQUAL_EQUAL, TokenType.BANG_EQUAL,
                 TokenType.LESS_THAN, TokenType.LESS_EQUAL,
@@ -881,8 +849,6 @@ class Parser:
                 expr = BinaryExpr(expr, op.lexeme, right, op.line, op.column)
                 continue
 
-            # English comparisons
-            # 'does not equal'
             if self.check_identifier("does"):
                 start_pos = self.current
                 self.advance()
@@ -899,9 +865,8 @@ class Parser:
                         right = self.term()
                         expr = BinaryExpr(expr, "!=", right, self.previous().line, self.previous().column)
                         continue
-                self.current = start_pos  # backtrack if not matching pattern
+                self.current = start_pos
 
-            # 1. 'is equal to' / 'equals' / 'is'
             if self.match(TokenType.EQUALS):
                 op = self.previous()
                 right = self.term()
@@ -958,64 +923,54 @@ class Parser:
                         expr = BinaryExpr(expr, "!=", right, op.line, op.column)
                         continue
 
-                # 'is empty'
                 if self.check_identifier("empty"):
                     self.advance()
                     len_call = CallExpr(VariableExpr("Length", op.line, op.column), [expr], op.line, op.column)
                     expr = BinaryExpr(len_call, "==", LiteralExpr(0, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is positive'
                 if self.check_identifier("positive"):
                     self.advance()
                     expr = BinaryExpr(expr, ">", LiteralExpr(0, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is negative'
                 if self.check_identifier("negative"):
                     self.advance()
                     expr = BinaryExpr(expr, "<", LiteralExpr(0, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is zero'
                 if self.check_identifier("zero"):
                     self.advance()
                     expr = BinaryExpr(expr, "==", LiteralExpr(0, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is even'
                 if self.check_identifier("even"):
                     self.advance()
                     mod_expr = BinaryExpr(expr, "%", LiteralExpr(2, op.line, op.column), op.line, op.column)
                     expr = BinaryExpr(mod_expr, "==", LiteralExpr(0, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is odd'
                 if self.check_identifier("odd"):
                     self.advance()
                     mod_expr = BinaryExpr(expr, "%", LiteralExpr(2, op.line, op.column), op.line, op.column)
                     expr = BinaryExpr(mod_expr, "!=", LiteralExpr(0, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is something'
                 if self.check_identifier("something"):
                     self.advance()
                     expr = BinaryExpr(expr, "!=", LiteralExpr(None, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is nothing' / 'is nil'
                 if self.match(TokenType.NIL) or self.check_identifier("nothing") or self.check_identifier("null"):
                     if self.previous().type != TokenType.NIL:
                         self.advance()
                     expr = BinaryExpr(expr, "==", LiteralExpr(None, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is true'
                 if self.match(TokenType.TRUE):
                     expr = BinaryExpr(expr, "==", LiteralExpr(True, op.line, op.column), op.line, op.column)
                     continue
 
-                # 'is false'
                 if self.match(TokenType.FALSE):
                     expr = BinaryExpr(expr, "==", LiteralExpr(False, op.line, op.column), op.line, op.column)
                     continue
@@ -1064,7 +1019,6 @@ class Parser:
                     right = self.term()
                     expr = BinaryExpr(expr, "in", right, op.line, op.column)
                 else:
-                    # 'x is y' -> 'x == y'
                     right = self.term()
                     expr = BinaryExpr(expr, "==", right, op.line, op.column)
                 continue
@@ -1132,12 +1086,10 @@ class Parser:
                 expr = self.finish_call(expr)
 
             elif self.match(TokenType.DOT):
-                # Property access: obj.member
                 name_tok = self.consume_property_name("Expected property name after '.'")
                 expr = MemberAccessExpr(expr, name_tok.lexeme, name_tok.line, name_tok.column)
 
             elif self.match(TokenType.LBRACKET):
-                # Index access: obj[idx]
                 index_expr = self.expression()
                 self.consume(TokenType.RBRACKET, "Expected ']' after index")
                 expr = IndexAccessExpr(expr, index_expr, expr.line, expr.column)
@@ -1148,17 +1100,14 @@ class Parser:
         return expr
 
     def primary(self) -> Expr:
-        # Number literal
         if self.match(TokenType.INT, TokenType.FLOAT):
             tok = self.previous()
             return LiteralExpr(tok.literal, tok.line, tok.column)
 
-        # String literal (supports string interpolation if contains '{')
         if self.match(TokenType.STRING):
             tok = self.previous()
             return self.parse_string_with_interpolation(tok)
 
-        # Booleans and Nil
         if self.match(TokenType.TRUE):
             tok = self.previous()
             return LiteralExpr(True, tok.line, tok.column)
@@ -1171,7 +1120,6 @@ class Parser:
             tok = self.previous()
             return LiteralExpr(None, tok.line, tok.column)
 
-        # Ask expression: Ask "Enter your name: "
         if self.match(TokenType.ASK):
             tok = self.previous()
             prompt_expr: Optional[Expr] = None
@@ -1180,7 +1128,6 @@ class Parser:
                     prompt_expr = self.expression()
             return AskExpr(prompt=prompt_expr, line=tok.line, column=tok.column)
 
-        # Conditional expression: if <cond>: <then_expr> otherwise: <else_expr>
         if self.match(TokenType.IF):
             tok = self.previous()
             cond = self.expression()
@@ -1196,10 +1143,9 @@ class Parser:
             false_expr = self.expression()
             return ConditionalExpr(cond, true_expr, false_expr, tok.line, tok.column)
 
-        # Natural English list literal: a list of a, b, c OR a list containing a, b, c
         if self.check_identifier("a") and (self.check_next_identifier("list") or self.check_next_identifier("collection")):
-            tok = self.advance()  # 'a'
-            self.advance()        # 'list'
+            tok = self.advance()
+            self.advance()
             elements: List[Expr] = []
             if self.check_identifier("of") or self.check_identifier("containing") or self.check_identifier("with"):
                 self.advance()
@@ -1209,10 +1155,9 @@ class Parser:
                     elements.append(self.comparison())
             return ListExpr(elements, tok.line, tok.column)
 
-        # Natural English empty list / empty object
         if self.check_identifier("an") and self.check_next_identifier("empty"):
-            tok = self.advance()  # 'an'
-            self.advance()        # 'empty'
+            tok = self.advance()
+            self.advance()
             if self.check_identifier("list") or self.check_identifier("array") or self.check_identifier("collection"):
                 self.advance()
                 return ListExpr([], tok.line, tok.column)
@@ -1220,13 +1165,12 @@ class Parser:
                 self.advance()
                 return MapExpr([], tok.line, tok.column)
 
-        # Natural English object literal: an object with name = "Raj", age = 20
         if self.check_identifier("an") and (self.check_next_identifier("object") or self.check_next_identifier("dictionary") or self.check_next_identifier("map")):
-            tok = self.advance()  # 'an'
-            self.advance()        # 'object'
+            tok = self.advance()
+            self.advance()
             entries: List[Tuple[Expr, Expr]] = []
             if self.match(TokenType.WITH) or self.check_identifier("with"):
-                pass  # optional 'with'
+                pass
             if self.match(TokenType.COLON):
                 self.skip_newlines()
                 self.consume(TokenType.INDENT, "Expected indentation for object")
@@ -1246,7 +1190,6 @@ class Parser:
                     entries.append(self.map_entry())
                 return MapExpr(entries, tok.line, tok.column)
 
-        # List literal: [a, b, c]
         if self.match(TokenType.LBRACKET):
             tok = self.previous()
             elements: List[Expr] = []
@@ -1260,7 +1203,6 @@ class Parser:
             self.consume(TokenType.RBRACKET, "Expected ']' at end of list")
             return ListExpr(elements, tok.line, tok.column)
 
-        # Dictionary / Object literal: {"k": v, a = b}
         if self.match(TokenType.LBRACE):
             tok = self.previous()
             entries: List[Tuple[Expr, Expr]] = []
@@ -1274,12 +1216,10 @@ class Parser:
             self.consume(TokenType.RBRACE, "Expected '}' at end of object")
             return MapExpr(entries, tok.line, tok.column)
 
-        # Identifier
         if self.is_identifier_like(self.peek()):
             tok = self.advance()
             return VariableExpr(tok.lexeme, tok.line, tok.column)
 
-        # Grouping: (expr)
         if self.match(TokenType.LPAREN):
             expr = self.expression()
             self.consume(TokenType.RPAREN, "Expected ')' after expression")
@@ -1292,7 +1232,6 @@ class Parser:
         if self.match(TokenType.STRING):
             key = LiteralExpr(self.previous().literal, self.previous().line, self.previous().column)
         elif self.match(TokenType.IDENTIFIER):
-            # treat identifier as string key
             tok = self.previous()
             key = LiteralExpr(tok.lexeme, tok.line, tok.column)
         else:
@@ -1309,7 +1248,6 @@ class Parser:
         if "{" not in val:
             return LiteralExpr(val, token.line, token.column)
 
-        # Parse string interpolation: e.g. "Hello {name}, your score is {score * 2}!"
         parts: List[Union[str, Expr]] = []
         pattern = re.compile(r"\{([^}]+)\}")
         last_end = 0
@@ -1319,7 +1257,6 @@ class Parser:
             if start > last_end:
                 parts.append(val[last_end:start])
             expr_code = match.group(1).strip()
-            # Lex and parse inner expression
             from .lexer import Lexer
             sub_lexer = Lexer(expr_code, filename=self.filename)
             sub_tokens = sub_lexer.tokenize()
@@ -1333,9 +1270,6 @@ class Parser:
 
         return StringInterpolationExpr(parts, token.line, token.column)
 
-    # ========================================================================
-    # Helpers
-    # ========================================================================
 
     def check_identifier(self, name: str) -> bool:
         if self.is_at_end():

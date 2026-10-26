@@ -33,7 +33,6 @@ class Interpreter:
         self.environment = self.globals
         self.call_stack: List[str] = ["<main>"]
 
-        # Register global built-ins
         for name, builtin in get_global_builtins().items():
             self.globals.define(name, builtin, is_constant=True)
 
@@ -54,7 +53,6 @@ class Interpreter:
         except RuntimeError_ as e:
             raise e
         except Exception as e:
-            # Wrap standard Python exceptions with current execution context
             line = getattr(self, "current_line", 1)
             col = getattr(self, "current_col", 1)
             raise RuntimeError_(
@@ -65,9 +63,6 @@ class Interpreter:
                 source=self.source
             )
 
-    # ========================================================================
-    # Statement Execution
-    # ========================================================================
 
     def execute(self, stmt: Stmt) -> Any:
         self.current_line = stmt.line
@@ -277,7 +272,6 @@ class Interpreter:
         try:
             return self.execute_block(stmt.try_block)
         except (ReturnSignal, BreakSignal, ContinueSignal):
-            # Propagate control flow jumps
             raise
         except Exception as e:
             if stmt.catch_block:
@@ -299,7 +293,6 @@ class Interpreter:
     def execute_import(self, stmt: ImportStmt) -> None:
         mod_name = stmt.module_name
 
-        # 1. Check standard library
         stdlib_mod = get_stdlib_module(mod_name)
         if stdlib_mod is not None:
             if stmt.imported_names:
@@ -311,7 +304,6 @@ class Interpreter:
                 self.environment.define(bind_name, stdlib_mod)
             return
 
-        # 2. Check local file import (e.g. "./helpers.lys")
         base_dir = os.path.dirname(self.filename) if self.filename and self.filename != "<input>" else "."
         possible_paths = [
             os.path.join(base_dir, mod_name),
@@ -345,7 +337,6 @@ class Interpreter:
         parser = Parser(tokens, filename=target_path, source=src)
         program = parser.parse()
 
-        # Run in a new Interpreter instance
         sub_interp = Interpreter(filename=target_path, source=src)
         sub_interp.interpret(program)
 
@@ -423,7 +414,6 @@ class Interpreter:
         return app
 
     def execute_route(self, stmt: RouteStmt) -> None:
-        # Standalone route registration onto active server if present
         if hasattr(self, "active_server") and self.active_server is not None:
             def handler(req):
                 req_env = Environment(parent=self.environment)
@@ -493,9 +483,6 @@ class Interpreter:
                 source=self.source
             )
 
-    # ========================================================================
-    # Expression Evaluation
-    # ========================================================================
 
     def evaluate(self, expr: Expr) -> Any:
         if isinstance(expr, LiteralExpr):
@@ -544,7 +531,6 @@ class Interpreter:
     def evaluate_binary(self, expr: BinaryExpr) -> Any:
         op = expr.operator
 
-        # Short-circuit logical operators
         if op == "or":
             left = self.evaluate(expr.left)
             if self.is_truthy(left):
@@ -561,7 +547,6 @@ class Interpreter:
         right = self.evaluate(expr.right)
 
         if op == "+":
-            # If either operand is a string, perform concatenation
             if isinstance(left, str) or isinstance(right, str):
                 return self.stringify_val(left) + self.stringify_val(right)
             if isinstance(left, list) and isinstance(right, list):
@@ -578,7 +563,6 @@ class Interpreter:
             if right == 0:
                 raise ZeroDivisionError("Division by zero")
             res = left / right
-            # If cleanly divisible integer, return int
             if isinstance(res, float) and res.is_integer() and isinstance(left, int) and isinstance(right, int):
                 return int(res)
             return res
@@ -621,7 +605,6 @@ class Interpreter:
         elif op in ("not", "!"):
             return not self.is_truthy(operand)
         elif op == "await":
-            # Synchronous unwrap of async/await
             return operand
         else:
             raise RuntimeError_(f"Unknown unary operator '{op}'", line=expr.line, column=expr.column)
@@ -637,7 +620,6 @@ class Interpreter:
         elif isinstance(target, dict):
             if prop in target:
                 return target[prop]
-            # Built-in dictionary methods
             if prop == "keys":
                 return LyslynBuiltin("keys", lambda: list(target.keys()), arity=0)
             if prop == "values":
@@ -648,7 +630,6 @@ class Interpreter:
                 return LyslynBuiltin("get", lambda k, d=None: target.get(k, d))
             raise AttributeError(f"Object has no property '{prop}'")
         elif isinstance(target, list):
-            # Built-in list methods
             if prop in ("length", "count"):
                 return len(target)
             if prop == "append":

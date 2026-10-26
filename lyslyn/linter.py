@@ -52,7 +52,6 @@ class Linter:
 
         elif isinstance(stmt, IfStmt):
             for cond, body in stmt.branches:
-                # Check for dead branches e.g. If false:
                 if isinstance(cond, LiteralExpr) and cond.value is False:
                     self.warnings.append(LintWarning(
                         rule="dead-branch",
