@@ -307,9 +307,24 @@ The toolchain is available through both `lyslyn` and its short alias `lys`:
 lys --version
 lyslyn --version
 
-# Run any script, server, or pre-compiled bytecode (.lysc)
+# 1. Run any script directly (just like python)
+lys server.lys
+lyslyn server.lys
+
+# 2. Run with arguments passed to the script
+lys server.lys --port 8080 prod
+
+# 3. Run compiled bytecode (.lysc) directly with instant VM startup
+lys server.lysc
+
+# 4. Run inline code snippets
+lys -c "Print 'Hello world!'"
+
+# 5. Start interactive REPL (just type lys)
+lys
+
+# 6. Backward-compatible explicit run command
 lys run server.lys
-lys run server.lysc
 
 # Compile source to bytecode binary (.lysc)
 lys compile server.lys -o server.lysc

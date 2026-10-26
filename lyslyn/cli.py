@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import time
+import difflib
 import argparse
 from typing import List, Optional
 from .lexer import Lexer
@@ -25,9 +26,15 @@ VERSION = "2.0.0 — Industrial Edition"
 
 def cmd_run(args: argparse.Namespace) -> int:
     filepath = args.file
+    if os.path.isdir(filepath):
+        print(f"\033[91m✖ Error\033[0m: '{filepath}' is a directory, not a Lyslyn file.", file=sys.stderr)
+        return 1
+
     if not os.path.isfile(filepath):
         print(f"\033[91m✖ Error\033[0m: File '{filepath}' does not exist.")
         return 1
+
+    script_args = getattr(args, "script_args", []) or []
 
     try:
         # Check if pre-compiled bytecode .lysc
@@ -35,7 +42,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             with open(filepath, "rb") as f:
                 bytecode_data = f.read()
             chunk = Chunk.deserialize(bytecode_data)
-            vm = VM()
+            vm = VM(script_args=script_args)
             vm.run(chunk)
             return 0
 
@@ -53,7 +60,33 @@ def cmd_run(args: argparse.Namespace) -> int:
         analyzer.analyze(program)
 
         interp = Interpreter(filename=filepath, source=source)
-        interp.globals.define("args", args.script_args, is_constant=True)
+        interp.globals.define("args", script_args, is_constant=True)
+
+        interp.interpret(program)
+        return 0
+
+    except LyslynError as e:
+        print(e.format_diagnostic(color=True), file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"\033[91m✖ Runtime Error\033[0m: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_eval(code: str, script_args: Optional[List[str]] = None) -> int:
+    script_args = script_args or []
+    try:
+        lexer = Lexer(code, filename="<string>")
+        tokens = lexer.tokenize()
+
+        parser = Parser(tokens, filename="<string>", source=code)
+        program = parser.parse()
+
+        analyzer = SemanticAnalyzer(filename="<string>", source=code)
+        analyzer.analyze(program)
+
+        interp = Interpreter(filename="<string>", source=code)
+        interp.globals.define("args", script_args, is_constant=True)
 
         interp.interpret(program)
         return 0
@@ -476,15 +509,88 @@ def cmd_pm_pack(args: argparse.Namespace) -> int:
     return 0
 
 
+KNOWN_SUBCOMMANDS = {
+    "run", "compile", "disasm", "lint", "bench", "doc", "check",
+    "format", "test", "init", "add", "remove", "install", "pack", "repl"
+}
+
+COMMON_ALIASES = {
+    "fmt": "format",
+    "b": "bench",
+    "c": "compile",
+    "d": "disasm",
+    "t": "test",
+    "r": "run",
+    "chk": "check",
+}
+
+
 def main() -> None:
     invoked_name = os.path.basename(sys.argv[0]) if sys.argv else "lyslyn"
     prog_name = "lys" if invoked_name in ("lys", "lys.py") else "lyslyn"
 
+    # 1. No arguments provided -> launch interactive REPL (just like `python`)
+    if len(sys.argv) <= 1:
+        start_repl()
+        return
+
+    first_arg = sys.argv[1]
+
+    # 2. Version flag
+    if first_arg in ("-v", "-V", "--version"):
+        print(f"Lyslyn {VERSION}")
+        sys.exit(0)
+
+    # 3. Inline code snippet (-c "code") (just like `python -c`)
+    if first_arg == "-c":
+        if len(sys.argv) < 3:
+            print(f"{prog_name}: error: option -c requires an argument", file=sys.stderr)
+            sys.exit(2)
+        code = sys.argv[2]
+        script_args = sys.argv[3:]
+        sys.exit(cmd_eval(code, script_args))
+
+    # 4. If first argument is NOT a subcommand and does NOT start with '-',
+    # it is a script file to execute directly (just like `python script.py [args...]`)
+    if first_arg not in KNOWN_SUBCOMMANDS and not first_arg.startswith("-"):
+        target = first_arg
+        if os.path.isdir(target):
+            print(f"\033[91m✖ Error\033[0m: '{target}' is a directory, not a Lyslyn source file.", file=sys.stderr)
+            sys.exit(1)
+
+        if not os.path.isfile(target):
+            print(f"\033[91m✖ Error\033[0m: File '{target}' does not exist.", file=sys.stderr)
+            suggestion = COMMON_ALIASES.get(target)
+            if not suggestion:
+                matches = difflib.get_close_matches(target, list(KNOWN_SUBCOMMANDS), n=1, cutoff=0.6)
+                if matches:
+                    suggestion = matches[0]
+            if suggestion:
+                print(f"\033[93m💡 Did you mean:\033[0m {prog_name} {suggestion}?")
+            sys.exit(1)
+
+        # File exists: Execute immediately with all subsequent arguments passed through
+        script_args = sys.argv[2:]
+        run_args = argparse.Namespace(file=target, script_args=script_args)
+        sys.exit(cmd_run(run_args))
+
+    # 5. Standard argparse subcommands & help handling
     parser = argparse.ArgumentParser(
         prog=prog_name,
-        description="Lyslyn: The Industrial English-Structured Programming Language Toolchain",
+        usage=f"{prog_name} [file.lys | -c 'code' | command] [args...]",
+        description=(
+            "Lyslyn: The Industrial English-Structured Programming Language Toolchain\n\n"
+            "Execution patterns (just like Python):\n"
+            f"  {prog_name} script.lys [args...]          Run a Lyslyn source script directly\n"
+            f"  {prog_name} script.lysc [args...]         Run compiled bytecode directly\n"
+            f"  {prog_name} -c '<code>' [args...]         Execute inline Lyslyn code snippet\n"
+            f"  {prog_name}                              Start interactive REPL session\n"
+            f"  {prog_name} <command> [options]          Run developer toolchain commands"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version=f"Lyslyn {VERSION}")
+    parser.add_argument("--version", "-v", action="version", version=f"Lyslyn {VERSION}")
+    parser.add_argument("-c", dest="command_code", metavar="CODE", help="Execute inline code string")
 
     subparsers = parser.add_subparsers(dest="command", help="Available industrial commands")
 

@@ -72,17 +72,25 @@ Serve HTTP on port 8080:
 Both `lyslyn` and its short alias `lys` are installed and available in `$PATH`:
 
 ```bash
-# Verify installation
-lys --version
+# 1. Run any script directly (just like python)
+lys examples/01_hello.lys
 
-# Run any script or server
-lys run examples/10_backend_api_server.lys
+# 2. Run with arguments passed through
+lys examples/01_hello.lys foo bar
+
+# 3. Run inline code snippets
+lys -c "Print 'Hello from Lyslyn!'"
+
+# 4. Start interactive REPL (just type `lys`)
+lys
+
+# 5. Run compiled bytecode (.lysc) directly with instant VM startup
+lys hello.lysc
+
+# --- Developer Toolchain Commands ---
 
 # Compile to binary bytecode (.lysc)
 lys compile examples/01_hello.lys -o hello.lysc
-
-# Run pre-compiled bytecode with instant startup
-lys run hello.lysc
 
 # Disassemble bytecode instructions
 lys disasm examples/01_hello.lys
@@ -104,9 +112,6 @@ lys format -w
 
 # Scaffold a new project
 lys init my-service
-
-# Launch interactive REPL
-lys repl
 ```
 
 ---

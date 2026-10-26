@@ -15,7 +15,7 @@ class CallFrame:
 
 
 class VM:
-    def __init__(self):
+    def __init__(self, script_args: Optional[List[str]] = None):
         self.stack: List[Any] = []
         self.frames: List[CallFrame] = []
         self.globals: Dict[str, Any] = {}
@@ -23,6 +23,7 @@ class VM:
         # Initialize globals with standard built-ins
         for name, fn in get_global_builtins().items():
             self.globals[name] = fn
+        self.globals["args"] = script_args or []
 
     def run(self, chunk: Chunk) -> Any:
         self.stack = []

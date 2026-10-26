@@ -112,6 +112,7 @@ class TestBackendEngine(unittest.TestCase):
         self.assertEqual(mgr.count("items"), 1)
         mgr.delete("items", {"id": 1})
         self.assertEqual(mgr.count("items"), 0)
+        mgr.close()
 
     def test_validation_module(self):
         from lyslyn.stdlib.validation import validate_data
@@ -121,6 +122,30 @@ class TestBackendEngine(unittest.TestCase):
         bad = validate_data({"name": "R", "email": "invalid"}, schema)
         self.assertFalse(bad["valid"])
         self.assertEqual(len(bad["errors"]), 2)
+
+
+class TestCLI(unittest.TestCase):
+    def test_cmd_eval_inline(self):
+        from lyslyn.cli import cmd_eval
+        import io
+        from contextlib import redirect_stdout
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            ret = cmd_eval("Set x to 50\nSet y to 25\nPrint x + y", script_args=["alpha", "beta"])
+        self.assertEqual(ret, 0)
+        self.assertEqual(buf.getvalue().strip(), "75")
+
+    def test_cmd_eval_args_passed(self):
+        from lyslyn.cli import cmd_eval
+        import io
+        from contextlib import redirect_stdout
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            ret = cmd_eval("Print Length(args), args[0], args[1]", script_args=["hello", "world"])
+        self.assertEqual(ret, 0)
+        self.assertEqual(buf.getvalue().strip(), "2 hello world")
 
 
 if __name__ == "__main__":
