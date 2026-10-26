@@ -302,8 +302,11 @@ Assert(add(-1, 1) is equal to 0, "Zero sum test")
 
 
 def main() -> None:
+    invoked_name = os.path.basename(sys.argv[0]) if sys.argv else "lyslyn"
+    prog_name = "lys" if invoked_name in ("lys", "lys.py") else "lyslyn"
+
     parser = argparse.ArgumentParser(
-        prog="lyslyn",
+        prog=prog_name,
         description="Lyslyn: The English-Structured Programming Language Toolchain",
     )
     parser.add_argument("--version", action="version", version=f"Lyslyn {VERSION}")

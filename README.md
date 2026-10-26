@@ -65,21 +65,30 @@ Serve HTTP on port 8080:
 
 ## 📦 Getting Started
 
+Both `lyslyn` and its short alias `lys` are installed and available in `$PATH`:
+
 ```bash
-# Verify installation
+# Verify installation (both commands work interchangeably)
+lys --version
 lyslyn --version
 
-# Run the complete production REST API example
-lyslyn run examples/10_backend_api_server.lys
+# Run any script or server
+lys run examples/10_backend_api_server.lys
 
 # Check syntax and semantics without execution
-lyslyn check examples/10_backend_api_server.lys
+lys check examples/10_backend_api_server.lys
 
-# Run all 8 test suites
-lyslyn test
+# Run all test suites
+lys test
+
+# Beautify code in-place
+lys format -w
 
 # Scaffold a new project
-lyslyn init my-service
+lys init my-service
+
+# Launch the interactive REPL
+lys repl
 ```
 
 ---

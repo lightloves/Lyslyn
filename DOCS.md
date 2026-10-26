@@ -300,19 +300,31 @@ Set hash_val to crypto.sha256("payload string")
 
 ## 10. Developer Toolchain & CLI
 
+The toolchain is available through both `lyslyn` and its short alias `lys`:
+
 ```bash
+# Verify installation
+lys --version
+lyslyn --version
+
 # Run any script or server
-lyslyn run server.lys
+lys run server.lys
 
 # Validate syntax and types without running
-lyslyn check server.lys
+lys check server.lys
 
 # Run all test suites
-lyslyn test
+lys test
 
-# Format code
-lyslyn format server.lys -w
+# Beautify code in-place
+lys format -w
+
+# Check formatting without writing
+lys format --check
 
 # Scaffold a new project
-lyslyn init my-backend
+lys init my-backend
+
+# Start interactive REPL
+lys repl
 ```
