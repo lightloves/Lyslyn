@@ -1,6 +1,6 @@
-# Lyslyn — The Production-Grade Backend Language
+# Lyslyn — The Industrial-Grade Backend Language
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](SPEC.md)
+[![Version](https://img.shields.io/badge/version-2.0.0--industrial-blue.svg)](SPEC.md)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -8,14 +8,18 @@
 
 ---
 
-## ⚡ Highlights for Backend Developers
+## ⚡ Industrial Capabilities
 
+- 🚀 **Bytecode Compiler & Stack Virtual Machine**: Fast AST-to-bytecode compilation, binary serialization (`.lysc`), and disassembler (`lys disasm`).
 - 🌐 **Native HTTP Server & Routing**: First-class `Serve HTTP on port ...` syntax with pattern-matching path parameters (`/api/users/:id`).
 - 🗄️ **Zero-Dependency Database Engine**: Built-in SQLite and ORM layer (`db.insert`, `db.find`, `db.query`) with WAL concurrency.
 - 🛡️ **Declarative Request Validation**: `Validate body with { ... }` automatically inspects payloads and responds with formatted HTTP 400 errors.
 - 🔒 **Enterprise-Grade Cryptography**: Native PBKDF2 password hashing, constant-time verification, UUIDs, and random tokens.
-- 🗣️ **Structured English Readability**: Unambiguous grammar without cryptic punctuation, braces, or boilerplate.
-- 🛠️ **Full Developer Toolchain**: CLI with `run`, `check`, `format`, `test`, `init`, and an interactive `repl`.
+- 📦 **Deterministic Package Manager & Lockfile**: `lyslyn.lock` with SHA-256 integrity checksums (`lys add`, `lys install`, `lys pack`).
+- 🔍 **Static Analysis Linter**: `lys lint` detects dead branches, unreachable code, and unused bindings.
+- ⏱️ **Microbenchmark Harness**: `lys bench` reports operations/sec, mean latencies, and percentiles.
+- 📖 **Documentation Generator**: `lys doc` automatically extracts doc-comments into Markdown.
+- 🛠️ **Full Developer Toolchain**: CLI with `run`, `compile`, `disasm`, `lint`, `bench`, `doc`, `check`, `format`, `test`, `init`, and `repl`.
 
 ---
 
@@ -68,15 +72,29 @@ Serve HTTP on port 8080:
 Both `lyslyn` and its short alias `lys` are installed and available in `$PATH`:
 
 ```bash
-# Verify installation (both commands work interchangeably)
+# Verify installation
 lys --version
-lyslyn --version
 
 # Run any script or server
 lys run examples/10_backend_api_server.lys
 
-# Check syntax and semantics without execution
-lys check examples/10_backend_api_server.lys
+# Compile to binary bytecode (.lysc)
+lys compile examples/01_hello.lys -o hello.lysc
+
+# Run pre-compiled bytecode with instant startup
+lys run hello.lysc
+
+# Disassemble bytecode instructions
+lys disasm examples/01_hello.lys
+
+# Run static analysis linter
+lys lint examples/
+
+# Benchmark execution throughput
+lys bench examples/01_hello.lys -n 100
+
+# Generate API documentation
+lys doc examples/math_utils.lys
 
 # Run all test suites
 lys test
@@ -87,7 +105,7 @@ lys format -w
 # Scaffold a new project
 lys init my-service
 
-# Launch the interactive REPL
+# Launch interactive REPL
 lys repl
 ```
 

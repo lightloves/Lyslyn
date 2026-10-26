@@ -11,6 +11,7 @@ from . import server_mod
 from . import validation as validation_mod
 from . import crypto_mod
 from . import tasks_mod
+from . import metrics as metrics_mod
 from .misc_mods import (
     export_time_module,
     export_random_module,
@@ -40,6 +41,7 @@ STDLIB_REGISTRY: Dict[str, Dict[str, Any]] = {
     "validation": validation_mod.export_module(),
     "crypto": crypto_mod.export_module(),
     "tasks": tasks_mod.export_module(),
+    "metrics": metrics_mod.export_module(),
 }
 
 

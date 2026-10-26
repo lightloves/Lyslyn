@@ -307,8 +307,24 @@ The toolchain is available through both `lyslyn` and its short alias `lys`:
 lys --version
 lyslyn --version
 
-# Run any script or server
+# Run any script, server, or pre-compiled bytecode (.lysc)
 lys run server.lys
+lys run server.lysc
+
+# Compile source to bytecode binary (.lysc)
+lys compile server.lys -o server.lysc
+
+# Disassemble bytecode instructions
+lys disasm server.lys
+
+# Run static analysis linter
+lys lint [path]
+
+# Run microbenchmarks
+lys bench benchmark.lys -n 100
+
+# Generate API documentation
+lys doc [path] -o docs.md
 
 # Validate syntax and types without running
 lys check server.lys
@@ -321,6 +337,12 @@ lys format -w
 
 # Check formatting without writing
 lys format --check
+
+# Package manager commands
+lys add @lyslyn/logger 1.2.0
+lys remove @lyslyn/logger
+lys install
+lys pack
 
 # Scaffold a new project
 lys init my-backend
