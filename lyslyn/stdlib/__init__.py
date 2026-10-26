@@ -6,6 +6,11 @@ from . import json_mod
 from . import files as files_mod
 from . import text as text_mod
 from . import math_mod
+from . import db as db_mod
+from . import server_mod
+from . import validation as validation_mod
+from . import crypto_mod
+from . import tasks_mod
 from .misc_mods import (
     export_time_module,
     export_random_module,
@@ -15,6 +20,7 @@ from .misc_mods import (
 
 
 STDLIB_REGISTRY: Dict[str, Dict[str, Any]] = {
+    # Core general-purpose
     "http": http_mod.export_module(),
     "json": json_mod.export_module(),
     "files": files_mod.export_module(),
@@ -26,6 +32,14 @@ STDLIB_REGISTRY: Dict[str, Dict[str, Any]] = {
     "random": export_random_module(),
     "env": export_env_module(),
     "log": export_log_module(),
+
+    # Backend & Server Stack
+    "db": db_mod.export_module(),
+    "database": db_mod.export_module(),
+    "server": server_mod.export_module(),
+    "validation": validation_mod.export_module(),
+    "crypto": crypto_mod.export_module(),
+    "tasks": tasks_mod.export_module(),
 }
 
 

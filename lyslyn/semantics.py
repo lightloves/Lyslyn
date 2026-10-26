@@ -9,7 +9,8 @@ from .ast_nodes import (
     BinaryExpr, UnaryExpr, VariableExpr, LiteralExpr,
     CallExpr, MemberAccessExpr, IndexAccessExpr,
     ListExpr, MapExpr, StringInterpolationExpr, AskExpr,
-    ConditionalExpr
+    ConditionalExpr,
+    ServeStmt, RouteStmt, UseMiddlewareStmt, RespondStmt, ValidateStmt
 )
 from .diagnostics import SemanticError
 
@@ -155,6 +156,30 @@ class SemanticAnalyzer:
                 self.visit_expr(stmt.params)
             if stmt.timeout:
                 self.visit_expr(stmt.timeout)
+
+        elif isinstance(stmt, ServeStmt):
+            self.visit_expr(stmt.port)
+            if stmt.host:
+                self.visit_expr(stmt.host)
+            for m in stmt.middlewares:
+                self.visit_expr(m)
+            for r in stmt.routes:
+                self.visit_stmt(r)
+
+        elif isinstance(stmt, RouteStmt):
+            self.visit_stmt(stmt.body)
+
+        elif isinstance(stmt, UseMiddlewareStmt):
+            self.visit_expr(stmt.middleware)
+
+        elif isinstance(stmt, RespondStmt):
+            self.visit_expr(stmt.status)
+            self.visit_expr(stmt.payload)
+            if stmt.headers:
+                self.visit_expr(stmt.headers)
+
+        elif isinstance(stmt, ValidateStmt):
+            self.visit_expr(stmt.schema)
 
         elif isinstance(stmt, PrintStmt):
             for e in stmt.expressions:

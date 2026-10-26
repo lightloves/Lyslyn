@@ -10,7 +10,8 @@ from .ast_nodes import (
     BlockStmt, SetStmt, ChangeStmt, IfStmt, WhileStmt,
     ForStmt, RepeatStmt, FunctionStmt, ReturnStmt,
     BreakStmt, ContinueStmt, TryStmt, RaiseStmt,
-    ImportStmt, HttpStmt, PrintStmt, ExprStmt
+    ImportStmt, HttpStmt, PrintStmt, ExprStmt,
+    ServeStmt, RouteStmt, UseMiddlewareStmt, RespondStmt, ValidateStmt
 )
 from .diagnostics import ParseError
 
@@ -33,6 +34,14 @@ CONTEXTUAL_IDENTIFIER_TYPES = {
     TokenType.BY,
     TokenType.TO,
     TokenType.AS,
+    TokenType.PORT,
+    TokenType.ROUTE,
+    TokenType.USE,
+    TokenType.MIDDLEWARE,
+    TokenType.RESPOND,
+    TokenType.STATUS,
+    TokenType.VALIDATE,
+    TokenType.BODY,
 }
 
 
@@ -150,6 +159,22 @@ class Parser:
         # Network / HTTP
         if self.match(TokenType.SEND):
             return self.http_statement()
+
+        # Backend Server & Routing
+        if self.match(TokenType.SERVE):
+            return self.serve_statement()
+
+        if self.match(TokenType.ROUTE):
+            return self.route_statement()
+
+        if self.match(TokenType.USE):
+            return self.use_statement()
+
+        if self.match(TokenType.RESPOND):
+            return self.respond_statement()
+
+        if self.match(TokenType.VALIDATE):
+            return self.validate_statement()
 
         # I/O
         if self.match(TokenType.PRINT):
@@ -522,6 +547,146 @@ class Parser:
             line=keyword.line,
             column=keyword.column
         )
+
+    def serve_statement(self) -> ServeStmt:
+        keyword = self.previous()
+        if self.check_identifier("http") or self.check_identifier("server"):
+            self.advance()
+        if self.check_identifier("on"):
+            self.advance()
+        self.consume(TokenType.PORT, "Expected 'port' in serve statement")
+        port_expr = self.expression()
+
+        host_expr = None
+        if self.check_identifier("host"):
+            self.advance()
+            host_expr = self.expression()
+
+        self.consume(TokenType.COLON, "Expected ':' after serve statement header")
+        self.consume(TokenType.NEWLINE, "Expected newline after ':' in serve statement")
+        self.consume(TokenType.INDENT, "Expected indented block for server definition")
+
+        middlewares: List[Expr] = []
+        routes: List[RouteStmt] = []
+
+        while not self.check(TokenType.DEDENT) and not self.is_at_end():
+            self.skip_newlines()
+            if self.check(TokenType.DEDENT):
+                break
+
+            if self.match(TokenType.USE):
+                if self.match(TokenType.MIDDLEWARE):
+                    pass
+                mid = self.expression()
+                self.consume_statement_end()
+                middlewares.append(mid)
+            elif self.match(TokenType.ROUTE):
+                route = self.route_statement()
+                routes.append(route)
+            else:
+                stmt = self.statement()
+                if isinstance(stmt, RouteStmt):
+                    routes.append(stmt)
+                elif isinstance(stmt, UseMiddlewareStmt):
+                    middlewares.append(stmt.middleware)
+                else:
+                    raise self.error(self.peek(), "Expected 'Route' or 'Use middleware' inside Serve block")
+
+        self.consume(TokenType.DEDENT, "Expected dedent at end of serve block")
+        return ServeStmt(
+            port=port_expr,
+            host=host_expr,
+            middlewares=middlewares,
+            routes=routes,
+            line=keyword.line,
+            column=keyword.column
+        )
+
+    def route_statement(self) -> RouteStmt:
+        keyword = self.previous()
+        method_tok = self.consume_identifier("Expected HTTP method (GET, POST, PUT, DELETE, PATCH, etc.)")
+        method = method_tok.lexeme.upper()
+
+        if self.match(TokenType.STRING):
+            path_str = self.previous().literal
+        elif self.check(TokenType.IDENTIFIER) or self.is_identifier_like(self.peek()):
+            path_str = self.advance().lexeme
+        else:
+            raise self.error(self.peek(), 'Expected route path string e.g. "/api/users"')
+
+        self.consume(TokenType.COLON, "Expected ':' after route path")
+        body = self.block()
+        return RouteStmt(method=method, path=str(path_str), body=body, line=keyword.line, column=keyword.column)
+
+    def use_statement(self) -> UseMiddlewareStmt:
+        keyword = self.previous()
+        if self.match(TokenType.MIDDLEWARE):
+            pass
+        mid = self.expression()
+        self.consume_statement_end()
+        return UseMiddlewareStmt(middleware=mid, line=keyword.line, column=keyword.column)
+
+    def respond_statement(self) -> RespondStmt:
+        keyword = self.previous()
+        if self.match(TokenType.WITH) or self.check_identifier("with"):
+            pass
+
+        status_expr: Expr = LiteralExpr(200, keyword.line, keyword.column)
+        content_type = "json"
+        payload_expr: Optional[Expr] = None
+        headers_expr: Optional[Expr] = None
+
+        if self.match(TokenType.STATUS) or self.check_identifier("status"):
+            status_expr = self.term()
+            if self.match(TokenType.AND) or self.check_identifier("and"):
+                pass
+
+        if self.check_identifier("json"):
+            self.advance()
+            content_type = "json"
+            payload_expr = self.expression()
+        elif self.check_identifier("text"):
+            self.advance()
+            content_type = "text"
+            payload_expr = self.expression()
+        elif self.check_identifier("redirect"):
+            self.advance()
+            content_type = "redirect"
+            payload_expr = self.expression()
+        elif not self.check(TokenType.NEWLINE) and not self.check(TokenType.EOF):
+            payload_expr = self.expression()
+
+        if payload_expr is None:
+            payload_expr = LiteralExpr({"ok": True}, keyword.line, keyword.column)
+
+        self.consume_statement_end()
+        return RespondStmt(
+            status=status_expr,
+            content_type=content_type,
+            payload=payload_expr,
+            headers=headers_expr,
+            line=keyword.line,
+            column=keyword.column
+        )
+
+    def validate_statement(self) -> ValidateStmt:
+        keyword = self.previous()
+        target = "body"
+        if self.match(TokenType.BODY) or self.check_identifier("body"):
+            target = "body"
+        elif self.check_identifier("query"):
+            self.advance()
+            target = "query"
+        elif self.check_identifier("params"):
+            self.advance()
+            target = "params"
+
+        if self.match(TokenType.WITH) or self.check_identifier("with"):
+            pass
+        schema_expr = self.expression()
+        self.consume_statement_end()
+        return ValidateStmt(target=target, schema=schema_expr, line=keyword.line, column=keyword.column)
+
 
     def print_statement(self) -> PrintStmt:
         keyword = self.previous()

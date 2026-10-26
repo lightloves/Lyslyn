@@ -21,6 +21,15 @@ class ContinueSignal(LyslynControlFlow):
     pass
 
 
+class RespondSignal(LyslynControlFlow):
+    """Signal used by HTTP server route handlers to send an immediate response."""
+    def __init__(self, status: int, content_type: str, payload: Any, headers: Optional[Dict[str, str]] = None):
+        self.status = status
+        self.content_type = content_type
+        self.payload = payload
+        self.headers = headers
+
+
 class LyslynFunction:
     """Represents a user-defined function with lexical closure."""
     def __init__(self, name: str, params: List[str], body: Any, closure: Any, is_async: bool = False):

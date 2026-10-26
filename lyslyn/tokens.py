@@ -63,7 +63,7 @@ class TokenType(Enum):
     IMPORT = auto()
     FROM = auto()
 
-    # Network / HTTP
+    # Network / HTTP / Backend Server
     SEND = auto()
     REQUEST = auto()
     SAVE = auto()
@@ -72,6 +72,16 @@ class TokenType(Enum):
     DATA = auto()
     PARAMS = auto()
     TIMEOUT = auto()
+
+    SERVE = auto()
+    PORT = auto()
+    ROUTE = auto()
+    USE = auto()
+    MIDDLEWARE = auto()
+    RESPOND = auto()
+    STATUS = auto()
+    VALIDATE = auto()
+    BODY = auto()
 
     # I/O
     PRINT = auto()
@@ -176,6 +186,16 @@ KEYWORDS: dict[str, TokenType] = {
     "data": TokenType.DATA,
     "params": TokenType.PARAMS,
     "timeout": TokenType.TIMEOUT,
+
+    "serve": TokenType.SERVE,
+    "port": TokenType.PORT,
+    "route": TokenType.ROUTE,
+    "use": TokenType.USE,
+    "middleware": TokenType.MIDDLEWARE,
+    "respond": TokenType.RESPOND,
+    "status": TokenType.STATUS,
+    "validate": TokenType.VALIDATE,
+    "body": TokenType.BODY,
 
     "print": TokenType.PRINT,
     "ask": TokenType.ASK,

@@ -1,0 +1,122 @@
+# ==============================================================================
+# Example 10: Production-Grade REST API Backend Server
+# Written in Lyslyn — The English-Structured Backend Language
+# ==============================================================================
+
+Import db
+Import server
+Import crypto
+Import time
+
+# 1. Initialize SQLite Database & Tables
+db.connect("./products_store.db")
+
+db.create_table("products", {
+    "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+    "name": "TEXT NOT NULL",
+    "sku": "TEXT UNIQUE NOT NULL",
+    "price": "REAL NOT NULL",
+    "stock": "INTEGER DEFAULT 0",
+    "created_at": "TEXT NOT NULL"
+})
+
+# Seed initial catalog if empty
+If db.count("products") is equal to 0:
+    db.insert("products", {
+        "name": "Mechanical Keyboard",
+        "sku": "KB-MECH-01",
+        "price": 129.99,
+        "stock": 45,
+        "created_at": time.now()
+    })
+    db.insert("products", {
+        "name": "Ergonomic Mouse",
+        "sku": "MS-ERGO-02",
+        "price": 79.50,
+        "stock": 120,
+        "created_at": time.now()
+    })
+    Print "✓ Seeded initial database records."
+
+# 2. Launch HTTP Server on Port 8080 with Middleware & Endpoints
+Serve HTTP on port 8080:
+    Use middleware server.cors("*")
+    Use middleware server.logger()
+
+    # Health Check
+    Route GET "/health":
+        Respond with status 200 and json {
+            "status": "healthy",
+            "server": "Lyslyn Production Backend",
+            "timestamp": time.now()
+        }
+
+    # API Info
+    Route GET "/":
+        Respond with status 200 and json {
+            "name": "Lyslyn Inventory & Products API",
+            "version": "1.0.0",
+            "endpoints": [
+                "GET /health",
+                "GET /api/products",
+                "GET /api/products/:id",
+                "POST /api/products",
+                "DELETE /api/products/:id"
+            ]
+        }
+
+    # List Products
+    Route GET "/api/products":
+        Set all_products to db.query("SELECT * FROM products ORDER BY id DESC")
+        Respond with status 200 and json {
+            "total": all_products.length,
+            "data": all_products
+        }
+
+    # Get Single Product by ID
+    Route GET "/api/products/:id":
+        Set item to db.find_one("products", {"id": request.params.id})
+        If item is nil:
+            Respond with status 404 and json {
+                "error": "Not Found",
+                "message": "Product with ID {request.params.id} does not exist"
+            }
+        Otherwise:
+            Respond with status 200 and json {
+                "product": item
+            }
+
+    # Create Product with Request Body Validation
+    Route POST "/api/products":
+        Validate body with {
+            "name": "required string min:3",
+            "sku": "required string min:3",
+            "price": "required number min:0",
+            "stock": "optional number min:0"
+        }
+
+        Set new_product to db.insert("products", {
+            "name": request.body.name,
+            "sku": request.body.sku,
+            "price": request.body.price,
+            "stock": if request.body.stock is not nil: request.body.stock otherwise: 0,
+            "created_at": time.now()
+        })
+
+        Respond with status 201 and json {
+            "message": "Product created successfully",
+            "product": new_product
+        }
+
+    # Delete Product
+    Route DELETE "/api/products/:id":
+        Set rows to db.delete("products", {"id": request.params.id})
+        If rows is equal to 0:
+            Respond with status 404 and json {
+                "error": "Not Found",
+                "message": "Product not found"
+            }
+        Otherwise:
+            Respond with status 200 and json {
+                "message": "Product deleted successfully"
+            }

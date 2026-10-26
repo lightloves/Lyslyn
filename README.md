@@ -1,149 +1,146 @@
-# Lyslyn — The English-Structured Programming Language
+# Lyslyn — The Production-Grade Backend Language
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](SPEC.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](SPEC.md)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> **Lyslyn** makes programming feel like writing clear, structured English while retaining the precision, composability, and power of a real programming language.
+> **Lyslyn** makes backend programming feel like writing clear, structured English while providing the deterministic precision, performance, and reliability required of production web runtimes.
 
 ---
 
-## Highlights
+## ⚡ Highlights for Backend Developers
 
-- 🗣️ **Structured English Syntax**: `Set username to "Raj"`, `If age is at least 18:`, `Repeat 5 times:`
-- 🌐 **First-Class HTTP Syntax**: Declarative `Send a POST request to "..."` blocks with JSON, headers, and timeouts.
-- 🔒 **Deterministic Formal Grammar**: Fully defined context-free grammar; not an unpredictable LLM or fuzzy parser.
-- ⚡ **Lexical Closures & First-Class Functions**: Stateful closures, higher-order functions, and recursion.
-- 🛠️ **Full Developer Toolchain**: CLI with `run`, `check`, `format`, `test`, `init`, and interactive `repl`.
-- 🔋 **Batteries Included**: Standard library for `http`, `json`, `files`, `text`, `math`, `time`, `random`, `env`, and `log`.
+- 🌐 **Native HTTP Server & Routing**: First-class `Serve HTTP on port ...` syntax with pattern-matching path parameters (`/api/users/:id`).
+- 🗄️ **Zero-Dependency Database Engine**: Built-in SQLite and ORM layer (`db.insert`, `db.find`, `db.query`) with WAL concurrency.
+- 🛡️ **Declarative Request Validation**: `Validate body with { ... }` automatically inspects payloads and responds with formatted HTTP 400 errors.
+- 🔒 **Enterprise-Grade Cryptography**: Native PBKDF2 password hashing, constant-time verification, UUIDs, and random tokens.
+- 🗣️ **Structured English Readability**: Unambiguous grammar without cryptic punctuation, braces, or boilerplate.
+- 🛠️ **Full Developer Toolchain**: CLI with `run`, `check`, `format`, `test`, `init`, and an interactive `repl`.
 
 ---
 
-## Quick Example
+## 🚀 30-Second Example: A Complete REST API
 
 ```lys
-# Define variables
-Set username to "Raj"
-Set role to "Architect"
+Import db
+Import server
 
-# English comparison & conditionals
-If role is equal to "Architect":
-    Print "Welcome, {username}! Access granted."
-Otherwise:
-    Print "Standard user access."
+# Connect to database and ensure table exists
+db.connect("./store.db")
+db.create_table("items", {
+    "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+    "name": "TEXT NOT NULL",
+    "price": "REAL NOT NULL"
+})
 
-# First-class HTTP Request
-Send a POST request to "https://httpbin.org/post":
-    headers: { "Content-Type": "application/json" }
-    data: { "username": username, "status": "active" }
-    timeout: 5
-    save response as resp
+# Launch production server
+Serve HTTP on port 8080:
+    Use middleware server.cors("*")
+    Use middleware server.logger()
 
-If resp.ok:
-    Print "Server returned status:", resp.status
-    Set body to resp.json()
-    Print "Echoed payload:", body.json
+    Route GET "/health":
+        Respond with status 200 and json {"status": "ok"}
+
+    Route GET "/api/items":
+        Set items to db.find("items")
+        Respond with status 200 and json items
+
+    Route GET "/api/items/:id":
+        Set item to db.find_one("items", {"id": request.params.id})
+        If item is nil:
+            Respond with status 404 and json {"error": "Item not found"}
+        Otherwise:
+            Respond with status 200 and json item
+
+    Route POST "/api/items":
+        Validate body with {
+            "name": "required string min:2",
+            "price": "required number min:0"
+        }
+        Set new_item to db.insert("items", request.body)
+        Respond with status 201 and json new_item
 ```
 
 ---
 
-## Getting Started
-
-### Installation & CLI Usage
-
-The `lyslyn` executable is located in `bin/` and installed in your path:
+## 📦 Getting Started
 
 ```bash
 # Verify installation
 lyslyn --version
 
-# Start the interactive shell
-lyslyn repl
+# Run the complete production REST API example
+lyslyn run examples/10_backend_api_server.lys
 
-# Run an example
-lyslyn run examples/01_hello.lys
+# Check syntax and semantics without execution
+lyslyn check examples/10_backend_api_server.lys
 
-# Check a file for syntax and semantic errors
-lyslyn check examples/09_task_manager.lys
-
-# Run all test suites
+# Run all 8 test suites
 lyslyn test
 
-# Format a file
-lyslyn format examples/01_hello.lys -w
-
 # Scaffold a new project
-lyslyn init my-project
+lyslyn init my-service
 ```
 
 ---
 
-## Project Structure
+## 📁 Repository Structure
 
 ```
 lyslyn/
 ├── bin/
-│   └── lyslyn                 # Standalone CLI executable
+│   └── lyslyn                 # Executable CLI launcher
 ├── lyslyn/
-│   ├── __init__.py
-│   ├── tokens.py              # Token definitions and keyword tables
+│   ├── tokens.py              # Token definitions with backend keywords
 │   ├── lexer.py               # Indentation-aware lexical scanner
-│   ├── ast_nodes.py           # AST node representations
-│   ├── parser.py              # Deterministic recursive-descent parser
-│   ├── semantics.py           # Scope, constants, and loop validator
-│   ├── environment.py         # Lexical environments & closures
-│   ├── values.py              # Runtime value types (Functions, Modules, HTTP Responses)
-│   ├── interpreter.py         # AST execution engine
-│   ├── builtins.py            # Global built-in functions
-│   ├── formatter.py           # Code formatter & canonicalizer
+│   ├── ast_nodes.py           # AST definitions (ServeStmt, RouteStmt, RespondStmt, ValidateStmt)
+│   ├── parser.py              # Recursive-descent parser with contextual keywords
+│   ├── semantics.py           # Scope and backend syntax validator
+│   ├── interpreter.py         # AST execution engine and HTTP server runtime
 │   ├── diagnostics.py         # Formatted compiler error reporting
+│   ├── formatter.py           # Code formatter & canonicalizer
 │   ├── repl.py                # Interactive REPL shell
-│   ├── cli.py                 # Toolchain command implementations
+│   ├── cli.py                 # Toolchain commands
 │   └── stdlib/                # Standard library modules
-│       ├── __init__.py
+│       ├── db.py              # Built-in SQLite database & ORM layer
+│       ├── server_mod.py      # Multi-threaded HTTP server & routing engine
+│       ├── validation.py      # Request schema validator
+│       ├── crypto_mod.py      # Passwords, HMAC, tokens, UUIDs
+│       ├── tasks_mod.py       # Asynchronous background workers
 │       ├── http.py            # HTTP client (GET, POST, PUT, DELETE)
-│       ├── json_mod.py        # JSON serialization & parsing
-│       ├── files.py           # File & directory operations
+│       ├── json_mod.py        # JSON parse & stringify
+│       ├── files.py           # Filesystem I/O
 │       ├── text.py            # String manipulation helpers
-│       ├── math_mod.py        # Mathematical functions
-│       ├── misc_mods.py       # time, random, env, log modules
+│       └── math_mod.py        # Mathematical operations
 ├── examples/
 │   ├── 01_hello.lys           # Basics & arithmetic
-│   ├── 02_control_flow.lys    # Conditionals, while, for-each, repeat
-│   ├── 03_functions_and_closures.lys # Functions & stateful closures
-│   ├── 04_collections.lys     # Lists & Dictionaries
-│   ├── 05_error_handling.lys  # Try-catch-finally & raise
-│   ├── 06_filesystem.lys      # File read/write/delete operations
-│   ├── 07_http_requests.lys   # Real HTTP requests & response parsing
-│   ├── 08_modules_and_stdlib.lys # Standard library & custom imports
-│   └── 09_task_manager.lys    # Real-world task manager application
+│   ├── 02_control_flow.lys    # Conditionals & loops
+│   ├── 03_functions_and_closures.lys # First-class functions & stateful closures
+│   ├── 04_collections.lys     # Lists & dictionaries
+│   ├── 05_error_handling.lys  # Try, catch, finally, raise
+│   ├── 06_filesystem.lys      # File read/write/delete
+│   ├── 07_http_requests.lys   # Client HTTP requests
+│   ├── 08_modules_and_stdlib.lys # Standard library modules
+│   ├── 09_task_manager.lys    # Task persistence application
+│   └── 10_backend_api_server.lys # Complete Production REST API Server
 ├── tests/
+│   ├── test_backend_security.lys # Crypto & validation tests
+│   ├── test_db.lys            # Database CRUD & query tests
 │   ├── test_basics.lys        # Core language tests
-│   ├── test_control_flow.lys  # Loop and branch tests
-│   ├── test_functions.lys     # Recursion and closure tests
-│   ├── test_collections.lys   # Lists and maps tests
-│   ├── test_errors.lys        # Error handling tests
+│   ├── test_control_flow.lys  # Control flow tests
+│   ├── test_functions.lys     # Closures & recursion tests
+│   ├── test_collections.lys   # Lists & objects tests
+│   ├── test_errors.lys        # Exception handling tests
 │   ├── test_stdlib.lys        # Standard library tests
 │   └── test_compiler_units.py # Python unit test suite
-├── SPEC.md                    # Formal Language Specification
-├── DOCS.md                    # Language Reference Manual
+├── SPEC.md                    # Formal EBNF Grammar & Backend Specification
+├── DOCS.md                    # Complete Reference Manual
 └── README.md                  # This file
 ```
 
 ---
 
-## Architectural Decisions
+## 📚 Documentation Links
 
-1. **Host Implementation Language (Python 3)**:
-   Python was chosen as the implementation language for the v1 interpreter because it delivers clean AST representations, robust standard library support (zero external C dependencies or fragile native toolchain requirements in mobile/Termux/Linux environments), and rapid iteration.
-2. **Contextual Keywords**:
-   To make code read like natural English without colliding with variable names (`Set data to ...`, `save response as resp`), Lyslyn distinguishes between statement starters and contextual identifiers.
-3. **Bytecode VM Ready**:
-   The AST and lexical scoping architecture have been strictly separated from the evaluator, making it straightforward to add a Bytecode Compiler or native transpiler backend in future releases.
-
----
-
-## Documentation
-
-- [Language Specification (SPEC.md)](SPEC.md): Formal EBNF grammar, type semantics, and design principles.
-- [Reference Manual (DOCS.md)](DOCS.md): Full syntax guide, stdlib reference, and tutorial.
+- [Language Specification (`SPEC.md`)](SPEC.md): Formal EBNF grammar, backend syntax, and operational semantics.
+- [Reference Manual (`DOCS.md`)](DOCS.md): Complete guide to routing, database operations, security, and standard library.

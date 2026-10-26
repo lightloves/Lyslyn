@@ -246,6 +246,51 @@ class HttpStmt(Stmt):
 
 
 @dataclass
+class RouteStmt(Stmt):
+    method: str  # 'GET', 'POST', 'PUT', 'DELETE', 'PATCH', '*'
+    path: str
+    body: BlockStmt
+    line: int
+    column: int
+
+
+@dataclass
+class UseMiddlewareStmt(Stmt):
+    middleware: Expr
+    line: int
+    column: int
+
+
+@dataclass
+class RespondStmt(Stmt):
+    status: Expr
+    content_type: str  # 'json', 'text', 'raw'
+    payload: Expr
+    headers: Optional[Expr]
+    line: int
+    column: int
+
+
+@dataclass
+class ValidateStmt(Stmt):
+    target: str  # 'body', 'query', 'params'
+    schema: Expr
+    line: int
+    column: int
+
+
+@dataclass
+class ServeStmt(Stmt):
+    port: Expr
+    host: Optional[Expr]
+    middlewares: List[Expr]
+    routes: List[RouteStmt]
+    line: int
+    column: int
+
+
+
+@dataclass
 class PrintStmt(Stmt):
     expressions: List[Expr]
     line: int

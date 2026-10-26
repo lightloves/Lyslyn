@@ -11,13 +11,14 @@ from .ast_nodes import (
     BinaryExpr, UnaryExpr, VariableExpr, LiteralExpr,
     CallExpr, MemberAccessExpr, IndexAccessExpr,
     ListExpr, MapExpr, StringInterpolationExpr, AskExpr,
-    ConditionalExpr
+    ConditionalExpr,
+    ServeStmt, RouteStmt, UseMiddlewareStmt, RespondStmt, ValidateStmt
 )
 from .tokens import Token
 from .environment import Environment
 from .values import (
     LyslynFunction, LyslynBuiltin, LyslynModule, LyslynHttpResponse,
-    ReturnSignal, BreakSignal, ContinueSignal
+    ReturnSignal, BreakSignal, ContinueSignal, RespondSignal
 )
 from .builtins import get_global_builtins
 from .stdlib import get_stdlib_module
@@ -102,6 +103,16 @@ class Interpreter:
             return self.execute_import(stmt)
         elif isinstance(stmt, HttpStmt):
             return self.execute_http(stmt)
+        elif isinstance(stmt, ServeStmt):
+            return self.execute_serve(stmt)
+        elif isinstance(stmt, RouteStmt):
+            return self.execute_route(stmt)
+        elif isinstance(stmt, UseMiddlewareStmt):
+            return self.execute_use_middleware(stmt)
+        elif isinstance(stmt, RespondStmt):
+            return self.execute_respond(stmt)
+        elif isinstance(stmt, ValidateStmt):
+            return self.execute_validate(stmt)
         elif isinstance(stmt, PrintStmt):
             return self.execute_print(stmt)
         elif isinstance(stmt, ExprStmt):
@@ -364,6 +375,100 @@ class Interpreter:
 
         resp = http_mod.request(stmt.method, url, options)
         self.environment.define(stmt.response_var, resp)
+
+    def execute_serve(self, stmt: ServeStmt) -> Any:
+        from .stdlib.server_mod import ServerApp
+        port = int(self.evaluate(stmt.port))
+        host = str(self.evaluate(stmt.host)) if stmt.host else "0.0.0.0"
+
+        app = ServerApp()
+
+        for m_expr in stmt.middlewares:
+            mid = self.evaluate(m_expr)
+            app.use(mid)
+
+        for r_stmt in stmt.routes:
+            def make_handler(route_node: RouteStmt):
+                def handler(req):
+                    req_env = Environment(parent=self.environment)
+                    req_dict = {
+                        "method": req.method,
+                        "path": req.path,
+                        "params": req.params,
+                        "query": req.query,
+                        "headers": req.headers,
+                        "body": req.body,
+                        "ip": req.ip
+                    }
+                    req_env.define("request", req_dict, is_constant=True)
+                    req_env.define("Request", req_dict, is_constant=True)
+
+                    try:
+                        self.execute_block(route_node.body, env=req_env)
+                        return (200, {"ok": True})
+                    except RespondSignal as sig:
+                        return (sig.status, sig.payload)
+                return handler
+
+            app.add_route(r_stmt.method, r_stmt.path, make_handler(r_stmt))
+
+        blocking = getattr(self, "server_blocking", True)
+        self.active_server = app
+        app.listen(port=port, host=host, blocking=blocking)
+        return app
+
+    def execute_route(self, stmt: RouteStmt) -> None:
+        # Standalone route registration onto active server if present
+        if hasattr(self, "active_server") and self.active_server is not None:
+            def handler(req):
+                req_env = Environment(parent=self.environment)
+                req_dict = {
+                    "method": req.method,
+                    "path": req.path,
+                    "params": req.params,
+                    "query": req.query,
+                    "headers": req.headers,
+                    "body": req.body,
+                    "ip": req.ip
+                }
+                req_env.define("request", req_dict, is_constant=True)
+                try:
+                    self.execute_block(stmt.body, env=req_env)
+                    return (200, {"ok": True})
+                except RespondSignal as sig:
+                    return (sig.status, sig.payload)
+
+            self.active_server.add_route(stmt.method, stmt.path, handler)
+
+    def execute_use_middleware(self, stmt: UseMiddlewareStmt) -> None:
+        mid = self.evaluate(stmt.middleware)
+        if hasattr(self, "active_server") and self.active_server is not None:
+            self.active_server.use(mid)
+
+    def execute_respond(self, stmt: RespondStmt) -> None:
+        status_val = self.evaluate(stmt.status)
+        status = int(status_val) if status_val is not None else 200
+        payload = self.evaluate(stmt.payload)
+        headers = self.evaluate(stmt.headers) if stmt.headers else None
+        raise RespondSignal(status=status, content_type=stmt.content_type, payload=payload, headers=headers)
+
+    def execute_validate(self, stmt: ValidateStmt) -> None:
+        from .stdlib.validation import validate_data
+        schema = self.evaluate(stmt.schema)
+        try:
+            req_dict = self.environment.get("request")
+        except NameError:
+            raise RuntimeError_("Validate statement must be used within an HTTP route handler context", line=stmt.line, column=stmt.column)
+
+        target_data = req_dict.get(stmt.target, {})
+        res = validate_data(target_data, schema)
+        if not res["valid"]:
+            raise RespondSignal(
+                status=400,
+                content_type="json",
+                payload={"error": "Validation Failed", "details": res["errors"]}
+            )
+
 
     def execute_print(self, stmt: PrintStmt) -> None:
         values = [self.stringify_val(self.evaluate(e)) for e in stmt.expressions]

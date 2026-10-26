@@ -100,5 +100,28 @@ class TestFormatter(unittest.TestCase):
         self.assertIn("    Print x", formatted)
 
 
+class TestBackendEngine(unittest.TestCase):
+    def test_database_crud(self):
+        from lyslyn.stdlib.db import DatabaseManager
+        mgr = DatabaseManager(":memory:")
+        mgr.create_table("items", {"id": "INTEGER PRIMARY KEY AUTOINCREMENT", "title": "TEXT", "qty": "INTEGER"})
+        inserted = mgr.insert("items", {"title": "Widget", "qty": 10})
+        self.assertEqual(inserted["id"], 1)
+        found = mgr.find_one("items", {"id": 1})
+        self.assertEqual(found["title"], "Widget")
+        self.assertEqual(mgr.count("items"), 1)
+        mgr.delete("items", {"id": 1})
+        self.assertEqual(mgr.count("items"), 0)
+
+    def test_validation_module(self):
+        from lyslyn.stdlib.validation import validate_data
+        schema = {"name": "required string min:2", "email": "required email"}
+        good = validate_data({"name": "Raj", "email": "raj@example.com"}, schema)
+        self.assertTrue(good["valid"])
+        bad = validate_data({"name": "R", "email": "invalid"}, schema)
+        self.assertFalse(bad["valid"])
+        self.assertEqual(len(bad["errors"]), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
