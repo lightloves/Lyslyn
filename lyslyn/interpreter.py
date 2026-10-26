@@ -7,7 +7,7 @@ from .ast_nodes import (
     BlockStmt, SetStmt, ChangeStmt, IfStmt, WhileStmt,
     ForStmt, RepeatStmt, FunctionStmt, ReturnStmt,
     BreakStmt, ContinueStmt, TryStmt, RaiseStmt,
-    ImportStmt, HttpStmt, PrintStmt, ExprStmt,
+    ImportStmt, HttpStmt, PrintStmt, ExprStmt, AssertStmt,
     BinaryExpr, UnaryExpr, VariableExpr, LiteralExpr,
     CallExpr, MemberAccessExpr, IndexAccessExpr,
     ListExpr, MapExpr, StringInterpolationExpr, AskExpr,
@@ -115,6 +115,8 @@ class Interpreter:
             return self.execute_validate(stmt)
         elif isinstance(stmt, PrintStmt):
             return self.execute_print(stmt)
+        elif isinstance(stmt, AssertStmt):
+            return self.execute_assert(stmt)
         elif isinstance(stmt, ExprStmt):
             return self.evaluate(stmt.expression)
         else:
@@ -260,7 +262,8 @@ class Interpreter:
             params=stmt.params,
             body=stmt.body,
             closure=self.environment,
-            is_async=stmt.is_async
+            is_async=stmt.is_async,
+            interpreter=self
         )
         self.environment.define(stmt.name, func)
 
@@ -398,7 +401,9 @@ class Interpreter:
                         "query": req.query,
                         "headers": req.headers,
                         "body": req.body,
-                        "ip": req.ip
+                        "ip": req.ip,
+                        "user": getattr(req, "user", None),
+                        "context": getattr(req, "context", {})
                     }
                     req_env.define("request", req_dict, is_constant=True)
                     req_env.define("Request", req_dict, is_constant=True)
@@ -429,7 +434,9 @@ class Interpreter:
                     "query": req.query,
                     "headers": req.headers,
                     "body": req.body,
-                    "ip": req.ip
+                    "ip": req.ip,
+                    "user": getattr(req, "user", None),
+                    "context": getattr(req, "context", {})
                 }
                 req_env.define("request", req_dict, is_constant=True)
                 try:
@@ -473,6 +480,18 @@ class Interpreter:
     def execute_print(self, stmt: PrintStmt) -> None:
         values = [self.stringify_val(self.evaluate(e)) for e in stmt.expressions]
         print(*values)
+
+    def execute_assert(self, stmt: AssertStmt) -> None:
+        cond = self.evaluate(stmt.condition)
+        if not self.is_truthy(cond):
+            msg = self.evaluate(stmt.message) if stmt.message else "Assertion failed"
+            raise RuntimeError_(
+                f"AssertionError: {msg}",
+                line=stmt.line,
+                column=stmt.column,
+                filename=self.filename,
+                source=self.source
+            )
 
     # ========================================================================
     # Expression Evaluation

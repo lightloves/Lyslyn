@@ -509,8 +509,20 @@ def cmd_pm_pack(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_watch(args: argparse.Namespace) -> int:
+    from .watcher import watch_file
+    watch_file(args.file, getattr(args, "script_args", []))
+    return 0
+
+
+def cmd_bundle(args: argparse.Namespace) -> int:
+    from .bundler import bundle_project
+    bundle_project(args.file, args.output)
+    return 0
+
+
 KNOWN_SUBCOMMANDS = {
-    "run", "compile", "disasm", "lint", "bench", "doc", "check",
+    "run", "watch", "bundle", "compile", "disasm", "lint", "bench", "doc", "check",
     "format", "test", "init", "add", "remove", "install", "pack", "repl"
 }
 
@@ -522,6 +534,8 @@ COMMON_ALIASES = {
     "t": "test",
     "r": "run",
     "chk": "check",
+    "w": "watch",
+    "bun": "bundle",
 }
 
 
@@ -549,6 +563,18 @@ def main() -> None:
         code = sys.argv[2]
         script_args = sys.argv[3:]
         sys.exit(cmd_eval(code, script_args))
+
+    # 4. Watch flag (--watch <file> or <file> --watch)
+    if "--watch" in sys.argv:
+        argv_clean = [a for a in sys.argv[1:] if a != "--watch"]
+        if not argv_clean:
+            print(f"{prog_name}: error: --watch requires a file to monitor", file=sys.stderr)
+            sys.exit(2)
+        target = argv_clean[0]
+        script_args = argv_clean[1:]
+        from .watcher import watch_file
+        watch_file(target, script_args)
+        return
 
     # 4. If first argument is NOT a subcommand and does NOT start with '-',
     # it is a script file to execute directly (just like `python script.py [args...]`)
@@ -598,6 +624,16 @@ def main() -> None:
     run_parser = subparsers.add_parser("run", help="Run a Lyslyn source file or compiled .lysc bytecode")
     run_parser.add_argument("file", help="Path to .lys source file or .lysc bytecode")
     run_parser.add_argument("script_args", nargs="*", help="Arguments passed to the script")
+
+    # watch
+    watch_parser = subparsers.add_parser("watch", help="Run a Lyslyn file in live watch mode with hot reloading")
+    watch_parser.add_argument("file", help="Path to .lys source file to monitor")
+    watch_parser.add_argument("script_args", nargs="*", help="Arguments passed to the script")
+
+    # bundle
+    bundle_parser = subparsers.add_parser("bundle", help="Inline all local dependencies into a single distribution file")
+    bundle_parser.add_argument("file", help="Entry .lys source file")
+    bundle_parser.add_argument("-o", "--output", default="bundle.lys", help="Output bundled filename (default: bundle.lys)")
 
     # compile
     compile_parser = subparsers.add_parser("compile", help="Compile .lys source code into binary bytecode (.lysc)")
@@ -666,6 +702,10 @@ def main() -> None:
 
     if args.command == "run":
         sys.exit(cmd_run(args))
+    elif args.command == "watch":
+        sys.exit(cmd_watch(args))
+    elif args.command == "bundle":
+        sys.exit(cmd_bundle(args))
     elif args.command == "compile":
         sys.exit(cmd_compile(args))
     elif args.command == "disasm":

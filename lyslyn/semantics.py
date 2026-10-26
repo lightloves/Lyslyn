@@ -3,7 +3,7 @@ from typing import List, Optional, Set
 from .ast_nodes import (
     ASTNode, Program, Stmt, Expr,
     BlockStmt, SetStmt, ChangeStmt, IfStmt, WhileStmt,
-    ForStmt, RepeatStmt, FunctionStmt, ReturnStmt,
+    ForStmt, RepeatStmt, FunctionStmt, ReturnStmt, AssertStmt,
     BreakStmt, ContinueStmt, TryStmt, RaiseStmt,
     ImportStmt, HttpStmt, PrintStmt, ExprStmt,
     BinaryExpr, UnaryExpr, VariableExpr, LiteralExpr,
@@ -184,6 +184,11 @@ class SemanticAnalyzer:
         elif isinstance(stmt, PrintStmt):
             for e in stmt.expressions:
                 self.visit_expr(e)
+
+        elif isinstance(stmt, AssertStmt):
+            self.visit_expr(stmt.condition)
+            if stmt.message:
+                self.visit_expr(stmt.message)
 
         elif isinstance(stmt, ExprStmt):
             self.visit_expr(stmt.expression)

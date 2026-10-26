@@ -32,16 +32,22 @@ class RespondSignal(LyslynControlFlow):
 
 class LyslynFunction:
     """Represents a user-defined function with lexical closure."""
-    def __init__(self, name: str, params: List[str], body: Any, closure: Any, is_async: bool = False):
+    def __init__(self, name: str, params: List[str], body: Any, closure: Any, is_async: bool = False, interpreter: Any = None):
         self.name = name
         self.params = params
         self.body = body
         self.closure = closure
         self.is_async = is_async
+        self.interpreter = interpreter
+
+    def call(self, args: List[Any], interpreter: Any = None) -> Any:
+        interp = interpreter or self.interpreter
+        if interp is not None:
+            return interp.call_function(self, list(args))
+        raise RuntimeError(f"Cannot invoke function '{self.name}': interpreter context not attached")
 
     def __call__(self, *args: Any) -> Any:
-        # Will be called through interpreter
-        pass
+        return self.call(list(args))
 
     def __repr__(self) -> str:
         return f"<function {self.name}({', '.join(self.params)})>"

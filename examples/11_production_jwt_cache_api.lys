@@ -1,0 +1,139 @@
+# ==============================================================================
+# Example 11: Production Enterprise Backend API
+# ==============================================================================
+# Demonstrates:
+# - JWT Authentication & Session tokens (RFC 7519)
+# - In-Memory Caching with Millisecond TTL
+# - Sliding-Window IP Rate Limiting Middleware
+# - Functional Collections Processing (Map, Filter, Sort, Reduce)
+# - Environment Configuration (.env support)
+# - Structured Production Logging
+# ==============================================================================
+
+Import env
+Import log
+Import jwt
+Import cache
+Import server
+Import crypto
+Import collections
+
+# 1. Environment & Logging Setup
+Set port to env.get_int("PORT", 8080)
+Set jwt_secret to env.get("JWT_SECRET", "super-secure-production-secret-key-32b")
+log.set_level("info")
+log.info("Booting Lyslyn Enterprise Server...", {"port": port, "env": "production"})
+
+# 2. In-Memory Mock Database & Password Hashing
+Set hashed_pw to crypto.hash_password("admin123")
+Set users_db to {
+    "admin": {
+        "id": "usr_001",
+        "username": "admin",
+        "role": "superadmin",
+        "password_hash": hashed_pw
+    }
+}
+
+Set inventory to [
+    {"id": 1, "name": "Server Blade X1", "price": 1200, "category": "hardware", "stock": 15},
+    {"id": 2, "name": "Gigabit Switch 48P", "price": 450, "category": "networking", "stock": 4},
+    {"id": 3, "name": "SFP+ Optical Transceiver", "price": 85, "category": "networking", "stock": 80},
+    {"id": 4, "name": "NVMe U.2 Enterprise SSD 7.68TB", "price": 890, "category": "storage", "stock": 0},
+    {"id": 5, "name": "UPS Backup Power Unit 3000VA", "price": 950, "category": "power", "stock": 6}
+]
+
+# 3. HTTP Server Definition
+Serve HTTP on port port:
+    # Security & Observability Middlewares
+    Use middleware server.cors("*")
+    Use middleware server.logger()
+    Use middleware server.rate_limit(100, 60)
+    Use middleware server.jwt_auth(jwt_secret, ["/health", "/api/auth/login", "/api/catalog"])
+
+    # Healthcheck Route
+    Route GET "/health":
+        Respond with status 200 and json {
+            "status": "healthy",
+            "uptime_seconds": 120,
+            "cache_size": cache.size()
+        }
+
+    # Public Login Route: Authenticates user and issues JWT bearer token
+    Route POST "/api/auth/login":
+        Validate body with {
+            "username": "required string",
+            "password": "required string min:6"
+        }
+
+        Set user to users_db[request.body.username]
+        If user is nil:
+            log.warn("Login attempt with unknown username", {"user": request.body.username})
+            Respond with status 401 and json {"error": "Invalid credentials"}
+
+        Set valid to crypto.verify_password(request.body.password, user.password_hash)
+        If not valid:
+            log.warn("Invalid password attempt", {"user": request.body.username})
+            Respond with status 401 and json {"error": "Invalid credentials"}
+
+        # Sign JWT token with 2-hour expiration (7200s)
+        Set token_claims to {
+            "sub": user.id,
+            "user": user.username,
+            "role": user.role
+        }
+        Set auth_token to jwt.sign(token_claims, jwt_secret, 7200)
+
+        log.info("User successfully logged in", {"user": user.username})
+        Respond with status 200 and json {
+            "token": auth_token,
+            "token_type": "Bearer",
+            "expires_in": 7200,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "role": user.role
+            }
+        }
+
+    # Protected Profile Route: Requires valid JWT Bearer header
+    Route GET "/api/me":
+        # request.user is automatically injected by server.jwt_auth
+        Respond with status 200 and json {
+            "authenticated": true,
+            "claims": request.user
+        }
+
+    # Public Cached Catalog: Uses cache with TTL and functional filtering
+    Route GET "/api/catalog":
+        # Check in-memory cache first
+        Set cached_catalog to cache.get("catalog:available")
+        If cached_catalog is not nil:
+            Respond with status 200 and json {
+                "source": "cache",
+                "items": cached_catalog
+            }
+
+        # Filter in-stock items using functional collections
+        Create a function called in_stock with item:
+            Return item.stock > 0
+
+        Set available_items to Filter(inventory, in_stock)
+
+        # Cache available items for 30 seconds
+        cache.set("catalog:available", available_items, 30)
+
+        Respond with status 200 and json {
+            "source": "database",
+            "count": Length(available_items),
+            "items": available_items
+        }
+
+    # Protected Cache Eviction: Admin can flush cache
+    Route POST "/api/admin/cache/clear":
+        If request.user.role does not equal "superadmin":
+            Respond with status 403 and json {"error": "Forbidden: superadmin required"}
+
+        cache.clear()
+        log.info("Admin cleared application cache", {"by": request.user.user})
+        Respond with status 200 and json {"message": "Cache successfully cleared"}

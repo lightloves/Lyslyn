@@ -195,6 +195,14 @@ class ReturnStmt(Stmt):
 
 
 @dataclass
+class AssertStmt(Stmt):
+    condition: Expr
+    message: Optional[Expr]
+    line: int
+    column: int
+
+
+@dataclass
 class BreakStmt(Stmt):
     line: int
     column: int

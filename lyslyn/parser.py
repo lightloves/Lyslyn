@@ -8,7 +8,7 @@ from .ast_nodes import (
     ListExpr, MapExpr, MemberAccessExpr, IndexAccessExpr,
     CallExpr, StringInterpolationExpr, AskExpr, ConditionalExpr,
     BlockStmt, SetStmt, ChangeStmt, IfStmt, WhileStmt,
-    ForStmt, RepeatStmt, FunctionStmt, ReturnStmt,
+    ForStmt, RepeatStmt, FunctionStmt, ReturnStmt, AssertStmt,
     BreakStmt, ContinueStmt, TryStmt, RaiseStmt,
     ImportStmt, HttpStmt, PrintStmt, ExprStmt,
     ServeStmt, RouteStmt, UseMiddlewareStmt, RespondStmt, ValidateStmt
@@ -59,6 +59,15 @@ class Parser:
         if self.is_identifier_like(self.peek()):
             return self.advance()
         raise self.error(self.peek(), message)
+
+    def consume_property_name(self, message: str) -> Token:
+        tok = self.peek()
+        # Any valid identifier or keyword can be accessed as a member property (e.g. cache.set, obj.type)
+        if tok.lexeme and tok.lexeme.isidentifier():
+            return self.advance()
+        if self.is_identifier_like(tok):
+            return self.advance()
+        raise self.error(tok, message)
 
 
     def parse(self) -> Program:
@@ -180,6 +189,10 @@ class Parser:
         if self.match(TokenType.PRINT):
             return self.print_statement()
 
+        # Assertion
+        if self.match(TokenType.ASSERT):
+            return self.assert_statement()
+
         # Run / Call statement: 'Run greet with "Raj"'
         if self.check_identifier("run"):
             run_tok = self.advance()
@@ -250,7 +263,7 @@ class Parser:
 
         while True:
             if self.match(TokenType.DOT):
-                member_tok = self.consume_identifier( "Expected property name after '.'")
+                member_tok = self.consume_property_name("Expected property name after '.'")
                 expr = MemberAccessExpr(expr, member_tok.lexeme, member_tok.line, member_tok.column)
             elif self.match(TokenType.LBRACKET):
                 index_expr = self.expression()
@@ -320,7 +333,7 @@ class Parser:
         if self.match(TokenType.WITH):
             p = self.consume_identifier( "Expected parameter name")
             params.append(p.lexeme)
-            while self.match(TokenType.COMMA):
+            while self.match(TokenType.COMMA, TokenType.AND):
                 p = self.consume_identifier( "Expected parameter name")
                 params.append(p.lexeme)
         elif self.match(TokenType.LPAREN):
@@ -387,6 +400,9 @@ class Parser:
         catch_var: Optional[str] = None
         if self.match(TokenType.AS):
             var_tok = self.consume_identifier( "Expected variable name after 'catch error as'")
+            catch_var = var_tok.lexeme
+        elif not self.check(TokenType.COLON):
+            var_tok = self.consume_identifier( "Expected variable name after 'catch'")
             catch_var = var_tok.lexeme
         self.consume(TokenType.COLON, "Expected ':' after 'catch'")
         catch_block = self.block()
@@ -698,6 +714,30 @@ class Parser:
         self.consume_statement_end()
         return PrintStmt(expressions=exprs, line=keyword.line, column=keyword.column)
 
+    def assert_statement(self) -> Stmt:
+        keyword = self.previous()
+        if self.match(TokenType.LPAREN):
+            callee = VariableExpr(keyword.lexeme, keyword.line, keyword.column)
+            call = self.finish_call(callee)
+            self.consume_statement_end()
+            return ExprStmt(call, keyword.line, keyword.column)
+
+        cond = self.expression()
+        msg = None
+        if self.match(TokenType.COMMA):
+            msg = self.expression()
+        self.consume_statement_end()
+        return AssertStmt(condition=cond, message=msg, line=keyword.line, column=keyword.column)
+
+    def finish_call(self, callee: Expr) -> CallExpr:
+        args: List[Expr] = []
+        if not self.check(TokenType.RPAREN):
+            args.append(self.expression())
+            while self.match(TokenType.COMMA):
+                args.append(self.expression())
+        self.consume(TokenType.RPAREN, "Expected ')' after arguments")
+        return CallExpr(callee, args, callee.line, callee.column)
+
     def expression_statement(self) -> ExprStmt:
         expr = self.expression()
         self.consume_statement_end()
@@ -766,6 +806,25 @@ class Parser:
                 continue
 
             # English comparisons
+            # 'does not equal'
+            if self.check_identifier("does"):
+                start_pos = self.current
+                self.advance()
+                if self.match(TokenType.NOT):
+                    matched_equal = False
+                    if self.match(TokenType.EQUAL, TokenType.EQUALS):
+                        matched_equal = True
+                    elif self.check_identifier("equal") or self.check_identifier("equals"):
+                        self.advance()
+                        matched_equal = True
+                    if matched_equal:
+                        if self.match(TokenType.TO):
+                            pass
+                        right = self.term()
+                        expr = BinaryExpr(expr, "!=", right, self.previous().line, self.previous().column)
+                        continue
+                self.current = start_pos  # backtrack if not matching pattern
+
             # 1. 'is equal to' / 'equals' / 'is'
             if self.match(TokenType.EQUALS):
                 op = self.previous()
@@ -896,18 +955,11 @@ class Parser:
 
         while True:
             if self.match(TokenType.LPAREN):
-                # Function call: f(a, b)
-                args: List[Expr] = []
-                if not self.check(TokenType.RPAREN):
-                    args.append(self.expression())
-                    while self.match(TokenType.COMMA):
-                        args.append(self.expression())
-                close_paren = self.consume(TokenType.RPAREN, "Expected ')' after arguments")
-                expr = CallExpr(expr, args, expr.line, expr.column)
+                expr = self.finish_call(expr)
 
             elif self.match(TokenType.DOT):
                 # Property access: obj.member
-                name_tok = self.consume_identifier( "Expected property name after '.'")
+                name_tok = self.consume_property_name("Expected property name after '.'")
                 expr = MemberAccessExpr(expr, name_tok.lexeme, name_tok.line, name_tok.column)
 
             elif self.match(TokenType.LBRACKET):

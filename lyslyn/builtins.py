@@ -63,6 +63,12 @@ def _lyslyn_values(d: Dict[str, Any]) -> List[Any]:
 
 
 def get_global_builtins() -> Dict[str, Any]:
+    from .stdlib.collections_mod import (
+        map_fn, filter_fn, reduce_fn, sort_fn,
+        reverse_fn, unique_fn, chunk_fn, flatten_fn,
+        zip_fn, find_fn, keys_fn, values_fn
+    )
+
     b = {
         "print": LyslynBuiltin("print", lambda *args: print(*args)),
         "println": LyslynBuiltin("println", lambda *args: print(*args)),
@@ -77,9 +83,19 @@ def get_global_builtins() -> Dict[str, Any]:
         "range": LyslynBuiltin("range", _lyslyn_range),
         "append": LyslynBuiltin("append", _lyslyn_append, arity=2),
         "pop": LyslynBuiltin("pop", _lyslyn_pop),
-        "keys": LyslynBuiltin("keys", _lyslyn_keys, arity=1),
-        "values": LyslynBuiltin("values", _lyslyn_values, arity=1),
+        "keys": LyslynBuiltin("keys", keys_fn, arity=1),
+        "values": LyslynBuiltin("values", values_fn, arity=1),
         "assert": LyslynBuiltin("assert", _lyslyn_assert),
+        "map": LyslynBuiltin("map", map_fn, arity=2),
+        "filter": LyslynBuiltin("filter", filter_fn, arity=2),
+        "reduce": LyslynBuiltin("reduce", reduce_fn),
+        "sort": LyslynBuiltin("sort", sort_fn),
+        "reverse": LyslynBuiltin("reverse", reverse_fn, arity=1),
+        "unique": LyslynBuiltin("unique", unique_fn, arity=1),
+        "chunk": LyslynBuiltin("chunk", chunk_fn, arity=2),
+        "flatten": LyslynBuiltin("flatten", flatten_fn, arity=1),
+        "zip": LyslynBuiltin("zip", zip_fn, arity=2),
+        "find": LyslynBuiltin("find", find_fn, arity=2),
     }
     # Provide TitleCase aliases for natural English styling
     title_aliases = {
@@ -91,6 +107,18 @@ def get_global_builtins() -> Dict[str, Any]:
         "Type": b["type"],
         "Range": b["range"],
         "Append": b["append"],
+        "Keys": b["keys"],
+        "Values": b["values"],
+        "Map": b["map"],
+        "Filter": b["filter"],
+        "Reduce": b["reduce"],
+        "Sort": b["sort"],
+        "Reverse": b["reverse"],
+        "Unique": b["unique"],
+        "Chunk": b["chunk"],
+        "Flatten": b["flatten"],
+        "Zip": b["zip"],
+        "Find": b["find"],
     }
     b.update(title_aliases)
     return b

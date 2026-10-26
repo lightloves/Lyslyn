@@ -148,5 +148,40 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(buf.getvalue().strip(), "2 hello world")
 
 
+class TestNewFeatures(unittest.TestCase):
+    def test_jwt_sign_and_verify(self):
+        from lyslyn.stdlib.jwt_mod import jwt_sign, jwt_verify, jwt_decode
+        payload = {"sub": "user_42", "role": "engineer"}
+        token = jwt_sign(payload, "secret-test-key", expires_in=100)
+        self.assertIsInstance(token, str)
+        verified = jwt_verify(token, "secret-test-key")
+        self.assertEqual(verified["sub"], "user_42")
+        self.assertEqual(verified["role"], "engineer")
+
+        decoded = jwt_decode(token)
+        self.assertEqual(decoded["sub"], "user_42")
+
+    def test_cache_ttl(self):
+        from lyslyn.stdlib.cache_mod import TTLCache
+        c = TTLCache()
+        c.set("k1", "v1", ttl_seconds=10)
+        self.assertTrue(c.has("k1"))
+        self.assertEqual(c.get("k1"), "v1")
+        self.assertEqual(c.size(), 1)
+        c.delete("k1")
+        self.assertFalse(c.has("k1"))
+
+    def test_collections_functional(self):
+        from lyslyn.stdlib.collections_mod import map_fn, filter_fn, reduce_fn, unique_fn, chunk_fn
+        evens = filter_fn([1, 2, 3, 4, 5, 6], lambda x: x % 2 == 0)
+        self.assertEqual(evens, [2, 4, 6])
+        doubles = map_fn([1, 2, 3], lambda x: x * 2)
+        self.assertEqual(doubles, [2, 4, 6])
+        total = reduce_fn([1, 2, 3, 4], lambda acc, x: acc + x, 0)
+        self.assertEqual(total, 10)
+        self.assertEqual(unique_fn([1, 1, 2, 3, 3]), [1, 2, 3])
+        self.assertEqual(chunk_fn([1, 2, 3, 4, 5, 6], 3), [[1, 2, 3], [4, 5, 6]])
+
+
 if __name__ == "__main__":
     unittest.main()

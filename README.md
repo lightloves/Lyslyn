@@ -12,14 +12,19 @@
 
 - 🚀 **Bytecode Compiler & Stack Virtual Machine**: Fast AST-to-bytecode compilation, binary serialization (`.lysc`), and disassembler (`lys disasm`).
 - 🌐 **Native HTTP Server & Routing**: First-class `Serve HTTP on port ...` syntax with pattern-matching path parameters (`/api/users/:id`).
+- 🛡️ **JWT Authentication & Security**: RFC 7519 JSON Web Tokens (`jwt.sign`, `jwt.verify`) and native `server.jwt_auth()` middleware.
+- ⏱️ **In-Memory TTL Cache Engine**: Fast in-process key-value store with millisecond-precision TTL eviction (`cache.set`, `cache.get_or_set`).
+- 🛑 **Sliding-Window Rate Limiting**: Built-in IP-based rate limiting middleware (`server.rate_limit`) with HTTP 429 backoff.
+- 🔄 **Live Hot-Reload Watcher**: Instant development reloads with `lys watch <file>` or `lys --watch <file>`.
+- 📦 **Single-File Bundler**: Inlines local imports into a single distribution file with `lys bundle <file> -o bundle.lys`.
 - 🗄️ **Zero-Dependency Database Engine**: Built-in SQLite and ORM layer (`db.insert`, `db.find`, `db.query`) with WAL concurrency.
-- 🛡️ **Declarative Request Validation**: `Validate body with { ... }` automatically inspects payloads and responds with formatted HTTP 400 errors.
-- 🔒 **Enterprise-Grade Cryptography**: Native PBKDF2 password hashing, constant-time verification, UUIDs, and random tokens.
-- 📦 **Deterministic Package Manager & Lockfile**: `lyslyn.lock` with SHA-256 integrity checksums (`lys add`, `lys install`, `lys pack`).
-- 🔍 **Static Analysis Linter**: `lys lint` detects dead branches, unreachable code, and unused bindings.
-- ⏱️ **Microbenchmark Harness**: `lys bench` reports operations/sec, mean latencies, and percentiles.
-- 📖 **Documentation Generator**: `lys doc` automatically extracts doc-comments into Markdown.
-- 🛠️ **Full Developer Toolchain**: CLI with `run`, `compile`, `disasm`, `lint`, `bench`, `doc`, `check`, `format`, `test`, `init`, and `repl`.
+- 🔍 **Declarative Request Validation**: `Validate body with { ... }` automatically inspects payloads and responds with formatted HTTP 400 errors.
+- 🔒 **Enterprise-Grade Cryptography**: Native PBKDF2 password hashing, constant-time verification, UUIDs, HMAC, and tokens.
+- 🧩 **Functional Collections Pipeline**: High-order algorithms (`Map`, `Filter`, `Reduce`, `Sort`, `Unique`, `Chunk`, `Zip`, `GroupBy`).
+- ⚙️ **Config & Structured Logging**: Automatic `.env` file loader (`env.require`, `env.get_int`) and colorized/JSON logger (`log.set_format("json")`).
+- 📦 **Deterministic Package Manager**: `lyslyn.lock` with SHA-256 integrity checksums (`lys add`, `lys install`, `lys pack`).
+- 🔍 **Static Analysis Linter & Benchmarks**: `lys lint` for dead code and `lys bench` for throughput latency reports.
+- 🛠️ **Full Developer Toolchain**: CLI with `run`, `watch`, `bundle`, `compile`, `disasm`, `lint`, `bench`, `doc`, `check`, `format`, `test`, `init`, and `repl`.
 
 ---
 
@@ -81,10 +86,17 @@ lys examples/01_hello.lys foo bar
 # 3. Run inline code snippets
 lys -c "Print 'Hello from Lyslyn!'"
 
-# 4. Start interactive REPL (just type `lys`)
+# 4. Run in live hot-reload development mode
+lys watch examples/10_backend_api_server.lys
+# or: lys --watch examples/10_backend_api_server.lys
+
+# 5. Bundle project dependencies into a single distribution file
+lys bundle examples/08_modules_and_stdlib.lys -o app_bundle.lys
+
+# 6. Start interactive REPL (just type `lys`)
 lys
 
-# 5. Run compiled bytecode (.lysc) directly with instant VM startup
+# 7. Run compiled bytecode (.lysc) directly with instant VM startup
 lys hello.lysc
 
 # --- Developer Toolchain Commands ---
@@ -131,6 +143,8 @@ lyslyn/
 │   ├── interpreter.py         # AST execution engine and HTTP server runtime
 │   ├── diagnostics.py         # Formatted compiler error reporting
 │   ├── formatter.py           # Code formatter & canonicalizer
+│   ├── bundler.py             # Single-file dependency bundler
+│   ├── watcher.py             # Hot-reload process supervisor
 │   ├── repl.py                # Interactive REPL shell
 │   ├── cli.py                 # Toolchain commands
 │   └── stdlib/                # Standard library modules
@@ -138,6 +152,9 @@ lyslyn/
 │       ├── server_mod.py      # Multi-threaded HTTP server & routing engine
 │       ├── validation.py      # Request schema validator
 │       ├── crypto_mod.py      # Passwords, HMAC, tokens, UUIDs
+│       ├── jwt_mod.py         # RFC 7519 JSON Web Token signing & verification
+│       ├── cache_mod.py       # In-memory TTL key-value cache
+│       ├── collections_mod.py # High-order Map, Filter, Reduce, Sort, Chunk
 │       ├── tasks_mod.py       # Asynchronous background workers
 │       ├── http.py            # HTTP client (GET, POST, PUT, DELETE)
 │       ├── json_mod.py        # JSON parse & stringify
@@ -154,7 +171,8 @@ lyslyn/
 │   ├── 07_http_requests.lys   # Client HTTP requests
 │   ├── 08_modules_and_stdlib.lys # Standard library modules
 │   ├── 09_task_manager.lys    # Task persistence application
-│   └── 10_backend_api_server.lys # Complete Production REST API Server
+│   ├── 10_backend_api_server.lys # Complete Production REST API Server
+│   └── 11_production_jwt_cache_api.lys # Enterprise JWT, Cache, Rate-Limiting API
 ├── tests/
 │   ├── test_backend_security.lys # Crypto & validation tests
 │   ├── test_db.lys            # Database CRUD & query tests

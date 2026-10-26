@@ -281,10 +281,16 @@ Set hash_val to crypto.sha256("payload string")
 
 | Module | Description | Key Functions |
 |---|---|---|
-| **`db`** / **`database`** | SQLite & ORM Layer | `connect`, `query`, `execute`, `create_table`, `insert`, `find`, `find_one`, `update`, `delete`, `count` |
-| **`server`** | HTTP Server Engine | `create`, `cors`, `logger`, `auth_bearer` |
-| **`validation`** | Schema Validator | `validate(data, schema)` |
+| **`jwt`** | RFC 7519 JSON Web Tokens | `sign(payload, secret, expires_in)`, `verify(token, secret)`, `decode(token)` |
+| **`cache`** | In-Memory TTL Key-Value Store | `set(k, v, ttl)`, `get(k, default)`, `has(k)`, `delete(k)`, `clear()`, `size()`, `get_or_set(k, fn, ttl)` |
+| **`collections`** | Functional Data Processing | `map(lst, fn)`, `filter(lst, fn)`, `reduce(lst, fn, init)`, `sort(lst, key, rev)`, `unique(lst)`, `chunk(lst, sz)`, `zip(a, b)` |
+| **`server`** | HTTP Server & Middleware | `create`, `cors`, `logger`, `auth_bearer`, `jwt_auth(secret, exclude)`, `rate_limit(max, window)` |
+| **`db`** / **`database`** | SQLite & Document ORM | `connect`, `query`, `execute`, `create_table`, `insert`, `find`, `find_one`, `update`, `delete`, `count` |
 | **`crypto`** | Cryptography & Security | `hash_password`, `verify_password`, `sha256`, `hmac`, `token`, `uuid` |
+| **`validation`** | Schema Validator | `validate(data, schema)` |
+| **`env`** | Environment & Config | `get`, `get_int`, `get_bool`, `require(key)`, `set`, `has`, `all`, auto `.env` loading |
+| **`log`** | Structured Production Logging | `info`, `warn`, `error`, `debug`, `set_level("info")`, `set_format("text" \| "json")` |
+| **`metrics`** | Prometheus Telemetry | `counter`, `gauge`, `histogram`, `export_prometheus()` |
 | **`tasks`** | Background Worker Queues | `dispatch(fn, args)` |
 | **`http`** | HTTP Client | `get`, `post`, `put`, `delete`, `request` |
 | **`json`** | JSON Serialization | `parse`, `stringify` |
@@ -293,8 +299,6 @@ Set hash_val to crypto.sha256("payload string")
 | **`math`** | Mathematical Functions | `sqrt`, `round`, `floor`, `ceil`, `min`, `max`, `pow`, `pi` |
 | **`time`** | Time & Dates | `now`, `sleep`, `timestamp`, `format` |
 | **`random`** | Random Numbers | `random`, `integer`, `choice`, `shuffle` |
-| **`env`** | Environment Variables | `get`, `set`, `has` |
-| **`log`** | Colorized Logging | `info`, `warn`, `error`, `debug` |
 
 ---
 
@@ -303,27 +307,30 @@ Set hash_val to crypto.sha256("payload string")
 The toolchain is available through both `lyslyn` and its short alias `lys`:
 
 ```bash
-# Verify installation
-lys --version
-lyslyn --version
-
 # 1. Run any script directly (just like python)
 lys server.lys
 lyslyn server.lys
 
-# 2. Run with arguments passed to the script
+# 2. Run in live hot-reload development mode
+lys watch server.lys
+# or: lys server.lys --watch
+
+# 3. Bundle all local dependencies into a single distribution file
+lys bundle server.lys -o app_bundle.lys
+
+# 4. Run with arguments passed to the script
 lys server.lys --port 8080 prod
 
-# 3. Run compiled bytecode (.lysc) directly with instant VM startup
+# 5. Run compiled bytecode (.lysc) directly with instant VM startup
 lys server.lysc
 
-# 4. Run inline code snippets
+# 6. Run inline code snippets
 lys -c "Print 'Hello world!'"
 
-# 5. Start interactive REPL (just type lys)
+# 7. Start interactive REPL (just type lys)
 lys
 
-# 6. Backward-compatible explicit run command
+# 8. Backward-compatible explicit run command
 lys run server.lys
 
 # Compile source to bytecode binary (.lysc)

@@ -86,6 +86,7 @@ class TokenType(Enum):
     # I/O
     PRINT = auto()
     ASK = auto()
+    ASSERT = auto()
 
     # Logical & English comparison keywords
     AND = auto()
@@ -199,6 +200,7 @@ KEYWORDS: dict[str, TokenType] = {
 
     "print": TokenType.PRINT,
     "ask": TokenType.ASK,
+    "assert": TokenType.ASSERT,
 
     "and": TokenType.AND,
     "or": TokenType.OR,

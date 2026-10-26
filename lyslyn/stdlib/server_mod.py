@@ -28,6 +28,8 @@ class RequestContext:
         self.headers = headers
         self.body = body
         self.ip = ip
+        self.user: Optional[Dict[str, Any]] = None
+        self.context: Dict[str, Any] = {}
 
     def __repr__(self) -> str:
         return f"<Request {self.method} {self.path}>"
@@ -296,10 +298,77 @@ def middleware_auth_bearer(expected_token: str) -> Callable:
     return _auth
 
 
+def middleware_jwt_auth(secret: str, exclude: Optional[List[str]] = None) -> Callable:
+    """Enterprise JWT authentication middleware for REST APIs."""
+    from .jwt_mod import jwt_verify
+    excluded_patterns = set(exclude or [])
+
+    def _jwt_auth(req: RequestContext) -> Optional[Dict[str, Any]]:
+        for pattern in excluded_patterns:
+            if req.path == pattern or req.path.startswith(pattern.rstrip("*")):
+                return None
+
+        auth_header = req.headers.get("authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return {
+                "status": 401,
+                "body": {"error": "Unauthorized", "message": "Missing Bearer token in Authorization header"}
+            }
+        
+        token = auth_header[7:].strip()
+        try:
+            payload = jwt_verify(token, secret)
+            req.user = payload
+            req.context["user"] = payload
+            return None
+        except Exception as e:
+            return {
+                "status": 401,
+                "body": {"error": "Unauthorized", "message": f"JWT authentication failed: {e}"}
+            }
+
+    return _jwt_auth
+
+
+def middleware_rate_limit(max_requests: int = 60, window_seconds: int = 60) -> Callable:
+    """Sliding-window IP rate limiter middleware."""
+    import threading
+    lock = threading.RLock()
+    history: Dict[str, List[float]] = {}
+
+    def _rate_limiter(req: RequestContext) -> Optional[Dict[str, Any]]:
+        client_ip = req.ip
+        now = time.time()
+        with lock:
+            timestamps = history.get(client_ip, [])
+            valid_since = now - float(window_seconds)
+            timestamps = [t for t in timestamps if t > valid_since]
+
+            if len(timestamps) >= int(max_requests):
+                retry_after = int(timestamps[0] + float(window_seconds) - now) + 1
+                history[client_ip] = timestamps
+                return {
+                    "status": 429,
+                    "body": {
+                        "error": "Too Many Requests",
+                        "message": f"Rate limit exceeded: maximum {max_requests} requests per {window_seconds}s",
+                        "retry_after": retry_after
+                    }
+                }
+
+            timestamps.append(now)
+            history[client_ip] = timestamps
+            return None
+
+    return _rate_limiter
+
+
 def export_module() -> Dict[str, Any]:
     return {
         "create": LyslynBuiltin("create", lambda: ServerApp(), arity=0),
         "cors": LyslynBuiltin("cors", middleware_cors),
         "logger": LyslynBuiltin("logger", middleware_logger, arity=0),
         "auth_bearer": LyslynBuiltin("auth_bearer", middleware_auth_bearer, arity=1),
+        "jwt_auth": LyslynBuiltin("jwt_auth", middleware_jwt_auth),
+        "rate_limit": LyslynBuiltin("rate_limit", middleware_rate_limit),
     }
