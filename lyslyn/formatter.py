@@ -84,6 +84,8 @@ def format_source(source: str) -> str:
     lines = source.splitlines()
     formatted_lines: List[str] = []
     consecutive_empty = 0
+    prev_opened_block = False
+    prev_indent_level = 0
 
     for raw_line in lines:
         stripped = raw_line.strip()
@@ -97,10 +99,19 @@ def format_source(source: str) -> str:
 
         consecutive_empty = 0
 
-        # Preserve indentation level
+        # Calculate base indentation
         tab_expanded = raw_line.replace("\t", "    ")
         leading_spaces = len(tab_expanded) - len(tab_expanded.lstrip(" "))
         indent_level = round(leading_spaces / 4.0)
+
+        # Auto-indent if previous line opened a block and current line lacks indentation
+        is_dedent_keyword = any(
+            stripped.lower().startswith(kw) for kw in ("otherwise", "else", "catch", "finally")
+        )
+
+        if prev_opened_block and indent_level <= prev_indent_level and not is_dedent_keyword:
+            indent_level = prev_indent_level + 1
+
         indent_prefix = "    " * indent_level
 
         # Preserve comments
@@ -180,6 +191,9 @@ def format_source(source: str) -> str:
         # Re-attach inline comment
         if inline_comment:
             line_norm += inline_comment
+
+        prev_opened_block = stripped.endswith(":") and not stripped.startswith(("#", "//", "/*"))
+        prev_indent_level = indent_level
 
         formatted_lines.append(f"{indent_prefix}{line_norm.rstrip()}")
 
