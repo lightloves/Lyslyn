@@ -177,6 +177,146 @@ pub fn create_text_module() -> Value {
         ),
     );
 
+    exports.insert(
+        "repeat".to_string(),
+        Value::NativeFunction(
+            "repeat".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let s = args[0].to_string();
+                    let count = match args[1] {
+                        Value::Int(i) if i >= 0 => i as usize,
+                        Value::Float(f) if f >= 0.0 => f as usize,
+                        _ => return Err("Expected non-negative integer count".to_string()),
+                    };
+                    Ok(Value::Str(s.repeat(count)))
+                } else {
+                    Err("Expected 2 arguments to text.repeat(s, count)".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "index_of".to_string(),
+        Value::NativeFunction(
+            "index_of".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let s = args[0].to_string();
+                    let sub = args[1].to_string();
+                    let idx = s.find(&sub).map(|i| i as i64).unwrap_or(-1);
+                    Ok(Value::Int(idx))
+                } else {
+                    Err("Expected 2 arguments to text.index_of(s, sub)".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "last_index_of".to_string(),
+        Value::NativeFunction(
+            "last_index_of".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let s = args[0].to_string();
+                    let sub = args[1].to_string();
+                    let idx = s.rfind(&sub).map(|i| i as i64).unwrap_or(-1);
+                    Ok(Value::Int(idx))
+                } else {
+                    Err("Expected 2 arguments to text.last_index_of(s, sub)".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "char_at".to_string(),
+        Value::NativeFunction(
+            "char_at".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let s = args[0].to_string();
+                    let idx = match args[1] {
+                        Value::Int(i) if i >= 0 => i as usize,
+                        Value::Float(f) if f >= 0.0 => f as usize,
+                        _ => return Err("Expected non-negative integer index".to_string()),
+                    };
+                    if let Some(c) = s.chars().nth(idx) {
+                        Ok(Value::Str(c.to_string()))
+                    } else {
+                        Ok(Value::Nil)
+                    }
+                } else {
+                    Err("Expected 2 arguments to text.char_at(s, index)".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "pad_start".to_string(),
+        Value::NativeFunction(
+            "pad_start".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let s = args[0].to_string();
+                    let target_len = match args[1] {
+                        Value::Int(i) if i >= 0 => i as usize,
+                        Value::Float(f) if f >= 0.0 => f as usize,
+                        _ => return Err("Expected non-negative integer target length".to_string()),
+                    };
+                    let pad_char = if args.len() > 2 {
+                        args[2].to_string().chars().next().unwrap_or(' ')
+                    } else {
+                        ' '
+                    };
+                    let cur_len = s.chars().count();
+                    if cur_len >= target_len {
+                        Ok(Value::Str(s))
+                    } else {
+                        let pad: String = std::iter::repeat(pad_char).take(target_len - cur_len).collect();
+                        Ok(Value::Str(format!("{}{}", pad, s)))
+                    }
+                } else {
+                    Err("Expected at least 2 arguments to text.pad_start(s, len, [pad])".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "pad_end".to_string(),
+        Value::NativeFunction(
+            "pad_end".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let s = args[0].to_string();
+                    let target_len = match args[1] {
+                        Value::Int(i) if i >= 0 => i as usize,
+                        Value::Float(f) if f >= 0.0 => f as usize,
+                        _ => return Err("Expected non-negative integer target length".to_string()),
+                    };
+                    let pad_char = if args.len() > 2 {
+                        args[2].to_string().chars().next().unwrap_or(' ')
+                    } else {
+                        ' '
+                    };
+                    let cur_len = s.chars().count();
+                    if cur_len >= target_len {
+                        Ok(Value::Str(s))
+                    } else {
+                        let pad: String = std::iter::repeat(pad_char).take(target_len - cur_len).collect();
+                        Ok(Value::Str(format!("{}{}", s, pad)))
+                    }
+                } else {
+                    Err("Expected at least 2 arguments to text.pad_end(s, len, [pad])".to_string())
+                }
+            }),
+        ),
+    );
+
     Value::Module(Rc::new(LyslynModule {
         name: "text".to_string(),
         exports: Rc::new(RefCell::new(exports)),

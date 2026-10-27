@@ -66,6 +66,16 @@ impl Compiler {
                 is_constant: _,
                 span,
             } => self.compile_set(target, value, span.line)?,
+            Stmt::Class {
+                name,
+                superclass,
+                constructor,
+                methods,
+                span,
+            } => self.compile_class(name, superclass, constructor, methods, span.line)?,
+            Stmt::CallParent { method, args, span } => {
+                self.compile_call_parent(method, args, span.line)?;
+            }
             Stmt::Change {
                 target,
                 operation,
@@ -571,6 +581,97 @@ impl Compiler {
         Ok(())
     }
 
+    fn compile_class(
+        &mut self,
+        name: &str,
+        superclass: &Option<String>,
+        constructor: &Option<ClassMethod>,
+        methods: &[ClassMethod],
+        line: usize,
+    ) -> Result<(), LyslynError> {
+        let name_const = self.chunk.add_constant(Value::Str(name.to_string()));
+        self.emit_opcode(OpCode::Class, line);
+        self.chunk.write_u16(name_const, line);
+
+        if let Some(ref sup) = superclass {
+            self.compile_variable_load(sup, line);
+            self.emit_opcode(OpCode::Inherit, line);
+        }
+
+        if let Some(ref c) = constructor {
+            let mut fn_compiler =
+                Compiler::new_function(&format!("{}.initialize", name), &self.filename, &self.source);
+            fn_compiler.begin_scope();
+            for s in &c.body {
+                fn_compiler.compile_stmt(s)?;
+            }
+            fn_compiler.emit_opcode(OpCode::Nil, line);
+            fn_compiler.emit_opcode(OpCode::Return, line);
+
+            let fn_chunk = fn_compiler.chunk;
+            let lys_fn = LyslynFunction {
+                name: "initialize".to_string(),
+                params: c.params.clone(),
+                arity: c.params.len(),
+                chunk: fn_chunk,
+                closure_env: None,
+            };
+            let fn_const = self.chunk.add_constant(Value::Function(Rc::new(lys_fn)));
+            self.emit_opcode(OpCode::Constant, line);
+            self.chunk.write_u16(fn_const, line);
+            self.emit_opcode(OpCode::Constructor, line);
+        }
+
+        for m in methods {
+            let mut fn_compiler =
+                Compiler::new_function(&format!("{}.{}", name, m.name), &self.filename, &self.source);
+            fn_compiler.begin_scope();
+            for s in &m.body {
+                fn_compiler.compile_stmt(s)?;
+            }
+            fn_compiler.emit_opcode(OpCode::Nil, line);
+            fn_compiler.emit_opcode(OpCode::Return, line);
+
+            let fn_chunk = fn_compiler.chunk;
+            let lys_fn = LyslynFunction {
+                name: m.name.clone(),
+                params: m.params.clone(),
+                arity: m.params.len(),
+                chunk: fn_chunk,
+                closure_env: None,
+            };
+            let fn_const = self.chunk.add_constant(Value::Function(Rc::new(lys_fn)));
+            self.emit_opcode(OpCode::Constant, line);
+            self.chunk.write_u16(fn_const, line);
+
+            let m_name_const = self.chunk.add_constant(Value::Str(m.name.clone()));
+            self.emit_opcode(OpCode::Method, line);
+            self.chunk.write_u16(m_name_const, line);
+        }
+
+        self.define_variable(name, line);
+        Ok(())
+    }
+
+    fn compile_call_parent(
+        &mut self,
+        method: &Option<String>,
+        args: &[Expr],
+        line: usize,
+    ) -> Result<(), LyslynError> {
+        let m_name = method.clone().unwrap_or_else(|| "initialize".to_string());
+        let m_const = self.chunk.add_constant(Value::Str(m_name));
+        self.compile_variable_load("this", line);
+        for arg in args {
+            self.compile_expr(arg)?;
+        }
+        self.emit_opcode(OpCode::CallParent, line);
+        self.chunk.write_u16(m_const, line);
+        self.chunk.write_byte(args.len() as u8, line);
+        self.emit_opcode(OpCode::Pop, line);
+        Ok(())
+    }
+
     pub fn compile_expr(&mut self, expr: &Expr) -> Result<(), LyslynError> {
         match expr {
             Expr::Literal(val, span) => match val {
@@ -677,6 +778,14 @@ impl Compiler {
                         self.emit_opcode(OpCode::IsEmpty, span.line);
                         self.emit_opcode(OpCode::Not, span.line);
                     }
+                    UnaryOp::IsString => self.emit_opcode(OpCode::IsString, span.line),
+                    UnaryOp::IsNumber => self.emit_opcode(OpCode::IsNumber, span.line),
+                    UnaryOp::IsInteger => self.emit_opcode(OpCode::IsInteger, span.line),
+                    UnaryOp::IsFloat => self.emit_opcode(OpCode::IsFloat, span.line),
+                    UnaryOp::IsBoolean => self.emit_opcode(OpCode::IsBoolean, span.line),
+                    UnaryOp::IsList => self.emit_opcode(OpCode::IsList, span.line),
+                    UnaryOp::IsMap => self.emit_opcode(OpCode::IsMap, span.line),
+                    UnaryOp::IsFunction => self.emit_opcode(OpCode::IsFunction, span.line),
                 }
             }
             Expr::List(elements, span) => {
@@ -723,6 +832,27 @@ impl Compiler {
                 self.patch_jump(else_jump);
                 self.compile_expr(else_branch)?;
                 self.patch_jump(end_jump);
+            }
+            Expr::This(span) => {
+                self.compile_variable_load("this", span.line);
+            }
+            Expr::New { class_name, args, span } => {
+                self.compile_variable_load(class_name, span.line);
+                for arg in args {
+                    self.compile_expr(arg)?;
+                }
+                self.emit_opcode(OpCode::New, span.line);
+                self.chunk.write_byte(args.len() as u8, span.line);
+            }
+            Expr::IsInstance(expr, class_name, span) => {
+                self.compile_expr(expr)?;
+                let c = self.chunk.add_constant(Value::Str(class_name.clone()));
+                self.emit_opcode(OpCode::IsInstance, span.line);
+                self.chunk.write_u16(c, span.line);
+            }
+            Expr::TypeOf(expr, span) => {
+                self.compile_expr(expr)?;
+                self.emit_opcode(OpCode::TypeOf, span.line);
             }
             _ => {}
         }

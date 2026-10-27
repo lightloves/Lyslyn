@@ -1,0 +1,86 @@
+Define a class called Person:
+    To initialize with name, age:
+        Set this.name to name
+        Set this.age to age
+
+    Method get_name:
+        Return this.name
+
+    Method is_adult:
+        Return this.age is at least 18
+
+Define a class called Employee inheriting from Person:
+    To initialize with name, age, title:
+        Call parent with name, age
+        Set this.title to title
+
+    Method get_title:
+        Return this.title
+
+    Method introduce:
+        Return this.name + " (" + this.title + ")"
+
+Set p to a new Person with "Alice", 28
+Assert(p.get_name() is equal to "Alice")
+Assert(p.age is equal to 28)
+Assert(p.is_adult() is equal to true)
+
+Set p.age to 15
+Assert(p.is_adult() is equal to false)
+
+Set emp to a new Employee with "Bob", 35, "Principal Engineer"
+Assert(emp.get_name() is equal to "Bob")
+Assert(emp.get_title() is equal to "Principal Engineer")
+Assert(emp.introduce() is equal to "Bob (Principal Engineer)")
+Assert(emp.is_adult() is equal to true)
+
+Assert(emp is an instance of Employee)
+Assert(emp is an instance of Person)
+Assert(p is an instance of Person)
+Assert(p is not an instance of Employee)
+
+Assert(type("hello") is equal to "string")
+Assert(type(123) is equal to "int")
+Assert(type(3.14) is equal to "float")
+Assert(type(true) is equal to "bool")
+Assert(type([1, 2]) is equal to "list")
+Assert(type({"k": 1}) is equal to "map")
+Assert(type(p) is equal to "instance")
+Assert(type(Person) is equal to "class")
+
+Assert("world" is a string)
+Assert(42 is a number)
+Assert(42 is an integer)
+Assert(3.1415 is a float)
+Assert(true is a boolean)
+Assert([1, 2] is a list)
+Assert({"a": 1} is a map)
+Assert(p.get_name is a function)
+
+Get regex
+Assert(regex.is_match("^[a-z]+@[a-z]+\\.[a-z]+$", "alice@example.com") is equal to true)
+Assert(regex.is_match("^[0-9]+$", "1234") is equal to true)
+Assert(regex.is_match("^[0-9]+$", "12a4") is equal to false)
+Assert(regex.find("\\d+", "Order 482 created") is equal to "482")
+Assert(regex.replace("dog", "cat", "The dog barked") is equal to "The cat barked")
+Assert(regex.split("\\s+", "Lyslyn is enterprise grade").length is equal to 4)
+
+Get os
+Set plat to os.platform()
+Assert(plat is a string)
+Assert(plat.length is greater than 0)
+Set cur_dir to os.cwd()
+Assert(cur_dir is a string)
+
+Get math
+Assert(math.sin(0) is equal to 0.0)
+Assert(math.cos(0) is equal to 1.0)
+Assert(math.hypot(3, 4) is equal to 5.0)
+
+Get text
+Assert(text.repeat("Lys", 3) is equal to "LysLysLys")
+Assert(text.index_of("hello world", "world") is equal to 6)
+Assert(text.pad_start("42", 5, "0") is equal to "00042")
+Assert(text.char_at("Lyslyn", 0) is equal to "L")
+
+Say "All Java and Python level language features verified successfully!"

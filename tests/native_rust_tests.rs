@@ -109,3 +109,45 @@ Say parsed.active
     let (_, out) = run_code(code);
     assert_eq!(out, vec!["12", "raj", "true"]);
 }
+
+#[test]
+fn test_oop_classes_and_inheritance() {
+    let code = r#"
+Define a class called Animal:
+    To initialize with name:
+        Set this.name to name
+
+    Method speak:
+        Return this.name + " speaks"
+
+Define a class called Dog inheriting from Animal:
+    To initialize with name, breed:
+        Call parent with name
+        Set this.breed to breed
+
+    Method speak:
+        Return this.name + " barks"
+
+Set d to a new Dog with "Rex", "Husky"
+Say d.speak()
+Say d.breed
+Say d is an instance of Animal
+Say d is an instance of Dog
+"#;
+    let (_, out) = run_code(code);
+    assert_eq!(out, vec!["Rex barks", "Husky", "true", "true"]);
+}
+
+#[test]
+fn test_type_reflection_and_regex() {
+    let code = r#"
+Get regex
+Say type("text")
+Say type(100)
+Say 50 is an integer
+Say "email@test.com" is a string
+Say regex.is_match("^[a-z]+@[a-z]+\\.[a-z]+$", "email@test.com")
+"#;
+    let (_, out) = run_code(code);
+    assert_eq!(out, vec!["string", "int", "true", "true", "true"]);
+}

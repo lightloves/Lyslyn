@@ -69,6 +69,70 @@ pub struct LyslynModule {
 }
 
 #[derive(Clone)]
+pub struct LyslynClass {
+    pub name: String,
+    pub superclass: Option<Rc<RefCell<LyslynClass>>>,
+    pub constructor: Option<Rc<LyslynFunction>>,
+    pub methods: IndexMap<String, Rc<LyslynFunction>>,
+}
+
+impl LyslynClass {
+    pub fn new(name: &str) -> Self {
+        LyslynClass {
+            name: name.to_string(),
+            superclass: None,
+            constructor: None,
+            methods: IndexMap::new(),
+        }
+    }
+
+    pub fn find_method(&self, name: &str) -> Option<Rc<LyslynFunction>> {
+        if let Some(m) = self.methods.get(name) {
+            return Some(m.clone());
+        }
+        if let Some(ref sup) = self.superclass {
+            return sup.borrow().find_method(name);
+        }
+        None
+    }
+
+    pub fn find_constructor(&self) -> Option<Rc<LyslynFunction>> {
+        if let Some(ref c) = self.constructor {
+            return Some(c.clone());
+        }
+        if let Some(ref sup) = self.superclass {
+            return sup.borrow().find_constructor();
+        }
+        None
+    }
+
+    pub fn is_subclass_of(&self, class_name: &str) -> bool {
+        if self.name == class_name {
+            return true;
+        }
+        if let Some(ref sup) = self.superclass {
+            return sup.borrow().is_subclass_of(class_name);
+        }
+        false
+    }
+}
+
+#[derive(Clone)]
+pub struct LyslynInstance {
+    pub class: Rc<RefCell<LyslynClass>>,
+    pub fields: IndexMap<String, Value>,
+}
+
+impl LyslynInstance {
+    pub fn new(class: Rc<RefCell<LyslynClass>>) -> Self {
+        LyslynInstance {
+            class,
+            fields: IndexMap::new(),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum Value {
     Nil,
     Bool(bool),
@@ -80,6 +144,9 @@ pub enum Value {
     Function(Rc<LyslynFunction>),
     NativeFunction(String, Rc<NativeFn>),
     Module(Rc<LyslynModule>),
+    Class(Rc<RefCell<LyslynClass>>),
+    Instance(Rc<RefCell<LyslynInstance>>),
+    BoundMethod(Rc<RefCell<LyslynInstance>>, Rc<LyslynFunction>),
 }
 
 impl Value {
@@ -108,6 +175,9 @@ impl Value {
             Value::Function(_) => "function",
             Value::NativeFunction(_, _) => "native_function",
             Value::Module(_) => "module",
+            Value::Class(_) => "class",
+            Value::Instance(_) => "instance",
+            Value::BoundMethod(_, _) => "method",
         }
     }
 
@@ -348,6 +418,24 @@ impl Value {
                 }
             }
             Value::Module(m) => m.exports.borrow().get(prop).cloned(),
+            Value::Instance(inst) => {
+                if let Some(val) = inst.borrow().fields.get(prop) {
+                    return Some(val.clone());
+                }
+                if let Some(method) = inst.borrow().class.borrow().find_method(prop) {
+                    return Some(Value::BoundMethod(inst.clone(), method));
+                }
+                if prop == "class" {
+                    return Some(Value::Class(inst.borrow().class.clone()));
+                }
+                None
+            }
+            Value::Class(cls) => {
+                if let Some(method) = cls.borrow().find_method(prop) {
+                    return Some(Value::Function(method));
+                }
+                None
+            }
             _ => None,
         }
     }
@@ -360,6 +448,10 @@ impl Value {
             }
             Value::Module(m) => {
                 m.exports.borrow_mut().insert(prop.to_string(), val);
+                Ok(())
+            }
+            Value::Instance(inst) => {
+                inst.borrow_mut().fields.insert(prop.to_string(), val);
                 Ok(())
             }
             _ => Err(format!("Cannot set property on type '{}'", self.type_name())),
@@ -439,6 +531,8 @@ impl PartialEq for Value {
             (Value::Str(a), Value::Str(b)) => a == b,
             (Value::List(a), Value::List(b)) => *a.borrow() == *b.borrow(),
             (Value::Map(a), Value::Map(b)) => *a.borrow() == *b.borrow(),
+            (Value::Class(a), Value::Class(b)) => Rc::ptr_eq(a, b),
+            (Value::Instance(a), Value::Instance(b)) => Rc::ptr_eq(a, b),
             _ => false,
         }
     }
@@ -490,6 +584,9 @@ impl fmt::Display for Value {
             Value::Function(func) => write!(f, "<function {}>", func.name),
             Value::NativeFunction(name, _) => write!(f, "<native function {}>", name),
             Value::Module(m) => write!(f, "<module '{}'>", m.name),
+            Value::Class(cls) => write!(f, "<class {}>", cls.borrow().name),
+            Value::Instance(inst) => write!(f, "<instance of {}>", inst.borrow().class.borrow().name),
+            Value::BoundMethod(inst, m) => write!(f, "<bound method {}.{}>", inst.borrow().class.borrow().name, m.name),
         }
     }
 }

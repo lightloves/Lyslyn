@@ -45,6 +45,14 @@ pub enum UnaryOp {
     IsNotEven,
     IsNotOdd,
     IsNotEmpty,
+    IsString,
+    IsNumber,
+    IsInteger,
+    IsFloat,
+    IsBoolean,
+    IsList,
+    IsMap,
+    IsFunction,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,6 +68,14 @@ pub enum Expr {
     Call(Box<Expr>, Vec<Expr>, Span),
     Ask(Option<Box<Expr>>, Span),
     If(Box<Expr>, Box<Expr>, Box<Expr>, Span),
+    This(Span),
+    New {
+        class_name: String,
+        args: Vec<Expr>,
+        span: Span,
+    },
+    IsInstance(Box<Expr>, String, Span),
+    TypeOf(Box<Expr>, Span),
 }
 
 impl Expr {
@@ -75,14 +91,38 @@ impl Expr {
             | Expr::IndexAccess(_, _, span)
             | Expr::Call(_, _, span)
             | Expr::Ask(_, span)
-            | Expr::If(_, _, _, span) => span.clone(),
+            | Expr::If(_, _, _, span)
+            | Expr::This(span)
+            | Expr::New { span, .. }
+            | Expr::IsInstance(_, _, span)
+            | Expr::TypeOf(_, span) => span.clone(),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ClassMethod {
+    pub name: String,
+    pub params: Vec<String>,
+    pub body: Vec<Stmt>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     Block(Vec<Stmt>, Span),
+    Class {
+        name: String,
+        superclass: Option<String>,
+        constructor: Option<ClassMethod>,
+        methods: Vec<ClassMethod>,
+        span: Span,
+    },
+    CallParent {
+        method: Option<String>,
+        args: Vec<Expr>,
+        span: Span,
+    },
     Set {
         target: Expr,
         value: Expr,
@@ -209,6 +249,8 @@ impl Stmt {
     pub fn span(&self) -> Span {
         match self {
             Stmt::Block(_, span)
+            | Stmt::Class { span, .. }
+            | Stmt::CallParent { span, .. }
             | Stmt::Set { span, .. }
             | Stmt::Change { span, .. }
             | Stmt::If { span, .. }

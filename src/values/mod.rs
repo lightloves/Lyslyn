@@ -1,3 +1,3 @@
 pub mod value;
 
-pub use value::{Environment, LyslynFunction, LyslynModule, NativeFn, Value};
+pub use value::{Environment, LyslynClass, LyslynFunction, LyslynInstance, LyslynModule, NativeFn, Value};

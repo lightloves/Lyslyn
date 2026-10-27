@@ -1,0 +1,90 @@
+Get regex
+Get os
+Get math
+Get text
+
+Define a class called Account:
+    To initialize with owner, initial_balance:
+        Set this.owner to owner
+        Set this.balance to initial_balance
+
+    Method deposit with amount:
+        Set this.balance to this.balance + amount
+        Return this.balance
+
+    Method withdraw with amount:
+        If this.balance is at least amount:
+            Set this.balance to this.balance - amount
+            Return true
+        Otherwise:
+            Return false
+
+    Method get_summary:
+        Return this.owner + " has balance $" + this.balance
+
+Define a class called PremiumAccount inheriting from Account:
+    To initialize with owner, initial_balance, cashback_rate:
+        Call parent with owner, initial_balance
+        Set this.cashback_rate to cashback_rate
+
+    Method deposit with amount:
+        Set bonus to amount * this.cashback_rate
+        Call parent.deposit with amount + bonus
+        Return this.balance
+
+    Method get_summary:
+        Return "[Premium] " + this.owner + " has balance $" + this.balance + " (Cashback: " + this.cashback_rate + ")"
+
+Say "=== Lyslyn Object-Oriented Programming ==="
+
+Set acc1 to a new Account with "Alice", 1000
+Say acc1.get_summary()
+acc1.deposit(250)
+Say "After deposit:", acc1.get_summary()
+Set ok to acc1.withdraw(500)
+Say "Withdrawal succeeded?:", ok
+Say "Current balance:", acc1.balance
+
+Set acc2 to a new PremiumAccount with "Bob", 2000, 0.05
+Say acc2.get_summary()
+acc2.deposit(1000)
+Say "After premium deposit (with 5% bonus):", acc2.get_summary()
+
+Say "\n=== Type Reflection & Dynamic Inspection ==="
+Say "acc1 is an instance of Account?:", acc1 is an instance of Account
+Say "acc2 is an instance of Account?:", acc2 is an instance of Account
+Say "acc2 is an instance of PremiumAccount?:", acc2 is an instance of PremiumAccount
+Say "acc1 is an instance of PremiumAccount?:", acc1 is an instance of PremiumAccount
+Say "Type of acc1:", type(acc1)
+Say "Type of Account:", type(Account)
+Say "Type of acc1.balance:", type(acc1.balance)
+
+Say "\n=== Industrial Regular Expressions ==="
+Set email to "engineer@lyslyn.org"
+Set valid_email to regex.is_match("^[a-z]+@[a-z]+\\.[a-z]+$", email)
+Say "Email", email, "is valid?:", valid_email
+
+Set log_entry to "2026-10-27 22:45:10 [ERROR] 503 Service Unavailable"
+Set code to regex.find("[0-9]+", log_entry)
+Say "Extracted status code:", code
+
+Set sanitized to regex.replace("ERROR", "CRITICAL", log_entry)
+Say "Sanitized log:", sanitized
+
+Say "\n=== Operating System & Systems Programming ==="
+Say "Host Operating System:", os.platform()
+Say "CPU Architecture:", os.arch()
+Say "Current Working Directory:", os.cwd()
+
+Say "\n=== Advanced Mathematical Algorithms ==="
+Say "Sine of 90 degrees (pi / 2):", math.sin(math.pi / 2)
+Say "Hypotenuse of 5 and 12:", math.hypot(5, 12)
+Say "Degrees in pi radians:", math.degrees(math.pi)
+
+Say "\n=== Advanced Text & String Manipulation ==="
+Say "Padded Order ID:", text.pad_start("742", 8, "0")
+Say "Repeated divider:", text.repeat("=-", 15)
+Say "Index of 'Service':", text.index_of(log_entry, "Service")
+Say "First character:", text.char_at(log_entry, 0)
+
+Say "\n✓ Industrial-grade Java & Python level capabilities verified successfully!"

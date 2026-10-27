@@ -17,6 +17,7 @@ hmac = "0.12"
 hex = "0.4"
 chrono = "0.4"
 colored = "2.1"
+regex = "1.10"
 
 [[bin]]
 name = "lyslyn"

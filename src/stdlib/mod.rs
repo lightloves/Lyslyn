@@ -9,7 +9,9 @@ pub mod json;
 pub mod jwt;
 pub mod log;
 pub mod math;
+pub mod os;
 pub mod random;
+pub mod regex;
 pub mod server;
 pub mod text;
 pub mod time;
@@ -39,6 +41,9 @@ pub fn get_standard_modules() -> IndexMap<String, Value> {
     mods.insert("db".to_string(), db::create_db_module());
     mods.insert("server".to_string(), server::create_server_module());
     mods.insert("http".to_string(), http::create_http_module());
+    mods.insert("regex".to_string(), regex::load_regex_module());
+    mods.insert("re".to_string(), regex::load_regex_module());
+    mods.insert("os".to_string(), os::load_os_module());
 
     mods
 }

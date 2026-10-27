@@ -174,6 +174,127 @@ pub fn create_math_module() -> Value {
         ),
     );
 
+    let trig_funcs: Vec<(&str, fn(f64) -> f64)> = vec![
+        ("sin", f64::sin),
+        ("cos", f64::cos),
+        ("tan", f64::tan),
+        ("asin", f64::asin),
+        ("acos", f64::acos),
+        ("atan", f64::atan),
+        ("log", f64::ln),
+        ("log10", f64::log10),
+        ("log2", f64::log2),
+        ("exp", f64::exp),
+    ];
+
+    for (name, func) in trig_funcs {
+        let n_str = name.to_string();
+        exports.insert(
+            n_str.clone(),
+            Value::NativeFunction(
+                n_str,
+                Rc::new(move |args| {
+                    if let Some(arg) = args.first() {
+                        let num = match arg {
+                            Value::Int(i) => *i as f64,
+                            Value::Float(f) => *f,
+                            _ => return Err("Expected number argument".to_string()),
+                        };
+                        Ok(Value::Float(func(num)))
+                    } else {
+                        Err("Expected 1 argument".to_string())
+                    }
+                }),
+            ),
+        );
+    }
+
+    exports.insert(
+        "atan2".to_string(),
+        Value::NativeFunction(
+            "atan2".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let y = match args[0] {
+                        Value::Int(i) => i as f64,
+                        Value::Float(f) => f,
+                        _ => return Err("Expected number y".to_string()),
+                    };
+                    let x = match args[1] {
+                        Value::Int(i) => i as f64,
+                        Value::Float(f) => f,
+                        _ => return Err("Expected number x".to_string()),
+                    };
+                    Ok(Value::Float(y.atan2(x)))
+                } else {
+                    Err("Expected 2 arguments to math.atan2(y, x)".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "hypot".to_string(),
+        Value::NativeFunction(
+            "hypot".to_string(),
+            Rc::new(|args| {
+                if args.len() >= 2 {
+                    let x = match args[0] {
+                        Value::Int(i) => i as f64,
+                        Value::Float(f) => f,
+                        _ => return Err("Expected number x".to_string()),
+                    };
+                    let y = match args[1] {
+                        Value::Int(i) => i as f64,
+                        Value::Float(f) => f,
+                        _ => return Err("Expected number y".to_string()),
+                    };
+                    Ok(Value::Float(x.hypot(y)))
+                } else {
+                    Err("Expected 2 arguments to math.hypot(x, y)".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "degrees".to_string(),
+        Value::NativeFunction(
+            "degrees".to_string(),
+            Rc::new(|args| {
+                if let Some(arg) = args.first() {
+                    let rad = match arg {
+                        Value::Int(i) => *i as f64,
+                        Value::Float(f) => *f,
+                        _ => return Err("Expected number argument".to_string()),
+                    };
+                    Ok(Value::Float(rad.to_degrees()))
+                } else {
+                    Err("Expected 1 argument to math.degrees".to_string())
+                }
+            }),
+        ),
+    );
+
+    exports.insert(
+        "radians".to_string(),
+        Value::NativeFunction(
+            "radians".to_string(),
+            Rc::new(|args| {
+                if let Some(arg) = args.first() {
+                    let deg = match arg {
+                        Value::Int(i) => *i as f64,
+                        Value::Float(f) => *f,
+                        _ => return Err("Expected number argument".to_string()),
+                    };
+                    Ok(Value::Float(deg.to_radians()))
+                } else {
+                    Err("Expected 1 argument to math.radians".to_string())
+                }
+            }),
+        ),
+    );
+
     Value::Module(Rc::new(LyslynModule {
         name: "math".to_string(),
         exports: Rc::new(RefCell::new(exports)),

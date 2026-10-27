@@ -323,6 +323,7 @@ pub fn run_test_suite() -> Result<(), i32> {
         "tests/test_errors.lys",
         "tests/test_db.lys",
         "tests/test_backend_security.lys",
+        "tests/test_oop_and_industrial.lys",
     ];
 
     let overall_start = Instant::now();

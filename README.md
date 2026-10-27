@@ -10,21 +10,22 @@
 
 ## ⚡ Industrial Capabilities
 
-- 🚀 **Bytecode Compiler & Stack Virtual Machine**: Fast AST-to-bytecode compilation, binary serialization (`.lysc`), and disassembler (`lys disasm`).
+- 🏛️ **Java & Python Level OOP**: Full classes, constructors (`To initialize with ...:`), instance methods, inheritance (`inheriting from ...`), superclass delegation (`Call parent with ...`), and bound methods.
+- 🔍 **Dynamic Type Inspection & Reflection**: `type(x)` reflection, `is an instance of <Class>`, and English type predicates (`is a string`, `is an integer`, `is a number`, `is a list`, `is a map`, `is a function`).
+- 🎯 **Enterprise Regular Expressions**: Native `regex` engine (`regex.is_match`, `regex.find`, `regex.find_all`, `regex.replace`, `regex.split`).
+- 💻 **Operating System & Process System APIs**: Native `os` module (`os.platform`, `os.arch`, `os.cwd`, `os.args`, `os.exit`, `os.exec`).
+- 🚀 **Bytecode Compiler & Stack Virtual Machine**: Fast AST-to-bytecode compilation, binary serialization (`.lysc`), and independent Rust execution engine.
 - 🌐 **Native HTTP Server & Routing**: First-class `Serve HTTP on port ...` syntax with pattern-matching path parameters (`/api/users/:id`).
 - 🛡️ **JWT Authentication & Security**: RFC 7519 JSON Web Tokens (`jwt.sign`, `jwt.verify`) and native `server.jwt_auth()` middleware.
 - ⏱️ **In-Memory TTL Cache Engine**: Fast in-process key-value store with millisecond-precision TTL eviction (`cache.set`, `cache.get_or_set`).
 - 🛑 **Sliding-Window Rate Limiting**: Built-in IP-based rate limiting middleware (`server.rate_limit`) with HTTP 429 backoff.
-- 🔄 **Live Hot-Reload Watcher**: Instant development reloads with `lys watch <file>` or `lys --watch <file>`.
-- 📦 **Single-File Bundler**: Inlines local imports into a single distribution file with `lys bundle <file> -o bundle.lys`.
 - 🗄️ **Zero-Dependency Database Engine**: Built-in SQLite and ORM layer (`db.insert`, `db.find`, `db.query`) with WAL concurrency.
 - 🔍 **Declarative Request Validation**: `Validate body with { ... }` automatically inspects payloads and responds with formatted HTTP 400 errors.
 - 🔒 **Enterprise-Grade Cryptography**: Native PBKDF2 password hashing, constant-time verification, UUIDs, HMAC, and tokens.
-- 🧩 **Functional Collections Pipeline**: High-order algorithms (`Map`, `Filter`, `Reduce`, `Sort`, `Unique`, `Chunk`, `Zip`, `GroupBy`).
-- ⚙️ **Config & Structured Logging**: Automatic `.env` file loader (`env.require`, `env.get_int`) and colorized/JSON logger (`log.set_format("json")`).
-- 📦 **Deterministic Package Manager**: `lyslyn.lock` with SHA-256 integrity checksums (`lys add`, `lys install`, `lys pack`).
-- 🔍 **Static Analysis Linter & Benchmarks**: `lys lint` for dead code and `lys bench` for throughput latency reports.
-- 🛠️ **Full Developer Toolchain**: CLI with `run`, `watch`, `bundle`, `compile`, `disasm`, `lint`, `bench`, `doc`, `check`, `format`, `test`, `init`, and `repl`.
+- 🧩 **Functional Collections Pipeline**: High-order algorithms (`Map`, `Filter`, `Reduce`, `Sort`, `Unique`, `Chunk`, `Zip`).
+- ⚙️ **Config & Structured Logging**: Automatic `.env` file loader (`env.require`, `env.get_int`) and colorized/JSON logger.
+- 📦 **Deterministic Package Manager**: Project initialization and dependency management (`lys init`, `lys install`, `lys remove`).
+- 🛠️ **Full Developer Toolchain**: CLI with `run`, `check`, `build`, `test`, `init`, `install`, `remove`, and interactive `repl`.
 
 ---
 
@@ -225,6 +226,8 @@ lyslyn/
 │   │   ├── server.rs          # HTTP server, CORS, rate-limiting middleware
 │   │   ├── http.rs            # HTTP client (GET, POST)
 │   │   ├── log.rs             # Structured and colorized logging
+│   │   ├── regex.rs           # Industrial regular expression engine
+│   │   ├── os.rs              # Operating system & process system APIs
 │   │   └── mod.rs
 │   ├── package_manager/       # Project init, package install/remove
 │   │   └── mod.rs
@@ -242,7 +245,8 @@ lyslyn/
 │   ├── 09_task_manager.lys    # Task persistence application
 │   ├── 10_backend_api_server.lys # Complete Production REST API Server
 │   ├── 11_production_jwt_cache_api.lys # Enterprise JWT, Cache, Rate-Limiting API
-│   └── 12_simple_english_programming.lys # Pure English syntax showcase
+│   ├── 12_simple_english_programming.lys # Pure English syntax showcase
+│   └── 13_oop_and_industrial.lys # Object-oriented programming & systems API
 ├── tests/
 │   ├── native_rust_tests.rs   # Rust integration test suite
 │   ├── test_basics.lys        # Core language tests
@@ -254,7 +258,8 @@ lyslyn/
 │   ├── test_db.lys            # Database CRUD & query tests
 │   ├── test_backend_security.lys # Crypto & validation tests
 │   ├── test_jwt_cache_collections.lys # Advanced backend feature tests
-│   └── test_simple_english.lys # Natural English grammar tests
+│   ├── test_simple_english.lys # Natural English grammar tests
+│   └── test_oop_and_industrial.lys # OOP, regex & type reflection tests
 ├── SPEC.md                    # Formal EBNF Grammar & Backend Specification
 ├── DOCS.md                    # Complete Reference Manual
 └── README.md                  # This file

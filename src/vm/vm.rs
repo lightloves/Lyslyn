@@ -2,7 +2,7 @@ use crate::bytecode::chunk::Chunk;
 use crate::bytecode::opcodes::OpCode;
 use crate::errors::{ErrorKind, LyslynError, Span};
 use crate::modules::ModuleLoader;
-use crate::values::{Environment, LyslynFunction, Value};
+use crate::values::{Environment, LyslynClass, LyslynFunction, LyslynInstance, Value};
 use indexmap::IndexMap;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -167,6 +167,33 @@ impl VM {
         globals.insert("reduce".to_string(), red_ph);
 
         globals.insert(
+            "type".to_string(),
+            Value::NativeFunction(
+                "type".to_string(),
+                Rc::new(|args| {
+                    if let Some(arg) = args.first() {
+                        let t = match arg {
+                            Value::Str(_) => "string",
+                            Value::Int(_) => "int",
+                            Value::Float(_) => "float",
+                            Value::Bool(_) => "bool",
+                            Value::List(_) => "list",
+                            Value::Map(_) => "map",
+                            Value::Function(_) | Value::NativeFunction(_, _) | Value::BoundMethod(_, _) => "function",
+                            Value::Class(_) => "class",
+                            Value::Instance(_) => "instance",
+                            Value::Nil => "nil",
+                            _ => "object",
+                        };
+                        Ok(Value::Str(t.to_string()))
+                    } else {
+                        Ok(Value::Str("nil".to_string()))
+                    }
+                }),
+            ),
+        );
+
+        globals.insert(
             "Assert".to_string(),
             Value::NativeFunction(
                 "Assert".to_string(),
@@ -262,6 +289,46 @@ impl VM {
                 }
                 Ok(self.stack.pop().unwrap_or(Value::Nil))
             }
+            Value::BoundMethod(inst, fn_rc) => {
+                let mut new_env = if let Some(ref closure_env) = fn_rc.closure_env {
+                    Environment::with_enclosing(closure_env.clone())
+                } else {
+                    Environment::new()
+                };
+
+                new_env.define("this", Value::Instance(inst.clone()));
+                for (i, arg) in args.into_iter().enumerate() {
+                    if i < fn_rc.params.len() {
+                        new_env.define(&fn_rc.params[i], arg);
+                    }
+                }
+
+                let slots_offset = self.stack.len();
+                self.frames.push(CallFrame {
+                    function: Some(fn_rc.clone()),
+                    chunk: fn_rc.chunk.clone(),
+                    ip: 0,
+                    slots_offset,
+                    env: Rc::new(RefCell::new(new_env)),
+                });
+
+                let target_frames = self.frames.len() - 1;
+                while self.frames.len() > target_frames {
+                    if !self.step()? {
+                        break;
+                    }
+                }
+                Ok(self.stack.pop().unwrap_or(Value::Nil))
+            }
+            Value::Class(cls) => {
+                let inst = Rc::new(RefCell::new(LyslynInstance::new(cls.clone())));
+                let ctor_opt = cls.borrow().find_constructor();
+                if let Some(ctor) = ctor_opt {
+                    let bound = Value::BoundMethod(inst.clone(), ctor);
+                    self.call_value(&bound, args, line)?;
+                }
+                Ok(Value::Instance(inst))
+            }
             _ => Err(self.runtime_error(line, format!("Cannot call '{}'", callee.type_name()))),
         }
     }
@@ -348,6 +415,22 @@ impl VM {
             x if x == OpCode::Respond as u8 => OpCode::Respond,
             x if x == OpCode::Validate as u8 => OpCode::Validate,
             x if x == OpCode::HttpRequest as u8 => OpCode::HttpRequest,
+            x if x == OpCode::Class as u8 => OpCode::Class,
+            x if x == OpCode::Inherit as u8 => OpCode::Inherit,
+            x if x == OpCode::Method as u8 => OpCode::Method,
+            x if x == OpCode::Constructor as u8 => OpCode::Constructor,
+            x if x == OpCode::New as u8 => OpCode::New,
+            x if x == OpCode::CallParent as u8 => OpCode::CallParent,
+            x if x == OpCode::IsInstance as u8 => OpCode::IsInstance,
+            x if x == OpCode::TypeOf as u8 => OpCode::TypeOf,
+            x if x == OpCode::IsString as u8 => OpCode::IsString,
+            x if x == OpCode::IsNumber as u8 => OpCode::IsNumber,
+            x if x == OpCode::IsInteger as u8 => OpCode::IsInteger,
+            x if x == OpCode::IsFloat as u8 => OpCode::IsFloat,
+            x if x == OpCode::IsBoolean as u8 => OpCode::IsBoolean,
+            x if x == OpCode::IsList as u8 => OpCode::IsList,
+            x if x == OpCode::IsMap as u8 => OpCode::IsMap,
+            x if x == OpCode::IsFunction as u8 => OpCode::IsFunction,
             x if x == OpCode::Halt as u8 => OpCode::Halt,
             _ => {
                 return Err(LyslynError::new(
@@ -721,6 +804,38 @@ impl VM {
                         };
                         self.stack.push(result);
                     }
+                    Value::BoundMethod(inst, fn_rc) => {
+                        let mut new_env = if let Some(ref closure_env) = fn_rc.closure_env {
+                            Environment::with_enclosing(closure_env.clone())
+                        } else {
+                            Environment::new()
+                        };
+
+                        new_env.define("this", Value::Instance(inst.clone()));
+                        for (i, arg) in args.into_iter().enumerate() {
+                            if i < fn_rc.params.len() {
+                                new_env.define(&fn_rc.params[i], arg);
+                            }
+                        }
+
+                        let slots_offset = self.stack.len();
+                        self.frames.push(CallFrame {
+                            function: Some(fn_rc.clone()),
+                            chunk: fn_rc.chunk.clone(),
+                            ip: 0,
+                            slots_offset,
+                            env: Rc::new(RefCell::new(new_env)),
+                        });
+                    }
+                    Value::Class(cls) => {
+                        let inst = Rc::new(RefCell::new(LyslynInstance::new(cls.clone())));
+                        let ctor_opt = cls.borrow().find_constructor();
+                        if let Some(ctor) = ctor_opt {
+                            let bound = Value::BoundMethod(inst.clone(), ctor);
+                            self.call_value(&bound, args, line)?;
+                        }
+                        self.stack.push(Value::Instance(inst));
+                    }
                     _ => {
                         return Err(self.runtime_error(
                             line,
@@ -878,6 +993,9 @@ impl VM {
                     Value::Map(m) => {
                         m.borrow_mut().insert(prop_name, val);
                     }
+                    Value::Instance(inst) => {
+                        inst.borrow_mut().fields.insert(prop_name, val);
+                    }
                     _ => {
                         return Err(self.runtime_error(
                             line,
@@ -885,6 +1003,159 @@ impl VM {
                         ));
                     }
                 }
+            }
+            OpCode::Class => {
+                let name_idx = self.read_u16();
+                let name = format!("{}", self.current_frame().chunk.constants[name_idx as usize]);
+                let class_rc = Rc::new(RefCell::new(LyslynClass::new(&name)));
+                self.stack.push(Value::Class(class_rc));
+            }
+            OpCode::Inherit => {
+                let super_val = self.stack.pop().unwrap();
+                if let Value::Class(ref super_cls) = super_val {
+                    if let Some(Value::Class(ref sub_cls)) = self.stack.last() {
+                        sub_cls.borrow_mut().superclass = Some(super_cls.clone());
+                    }
+                } else {
+                    return Err(self.runtime_error(line, "Superclass must be a class"));
+                }
+            }
+            OpCode::Constructor => {
+                let fn_val = self.stack.pop().unwrap();
+                if let Value::Function(fn_rc) = fn_val {
+                    if let Some(Value::Class(ref cls)) = self.stack.last() {
+                        cls.borrow_mut().constructor = Some(fn_rc);
+                    }
+                }
+            }
+            OpCode::Method => {
+                let name_idx = self.read_u16();
+                let name = format!("{}", self.current_frame().chunk.constants[name_idx as usize]);
+                let fn_val = self.stack.pop().unwrap();
+                if let Value::Function(fn_rc) = fn_val {
+                    if let Some(Value::Class(ref cls)) = self.stack.last() {
+                        cls.borrow_mut().methods.insert(name, fn_rc);
+                    }
+                }
+            }
+            OpCode::New => {
+                let arg_count = self.read_byte() as usize;
+                let mut args = Vec::with_capacity(arg_count);
+                for _ in 0..arg_count {
+                    args.push(self.stack.pop().unwrap());
+                }
+                args.reverse();
+
+                let class_val = self.stack.pop().unwrap();
+                if let Value::Class(cls) = class_val {
+                    let inst = Rc::new(RefCell::new(LyslynInstance::new(cls.clone())));
+                    let ctor_opt = cls.borrow().find_constructor();
+                    if let Some(ctor) = ctor_opt {
+                        let bound = Value::BoundMethod(inst.clone(), ctor);
+                        self.call_value(&bound, args, line)?;
+                    }
+                    self.stack.push(Value::Instance(inst));
+                } else {
+                    return Err(self.runtime_error(
+                        line,
+                        format!("Cannot instantiate non-class type '{}'", class_val.type_name()),
+                    ));
+                }
+            }
+            OpCode::CallParent => {
+                let m_idx = self.read_u16();
+                let m_name = format!("{}", self.current_frame().chunk.constants[m_idx as usize]);
+                let arg_count = self.read_byte() as usize;
+                let mut args = Vec::with_capacity(arg_count);
+                for _ in 0..arg_count {
+                    args.push(self.stack.pop().unwrap());
+                }
+                args.reverse();
+
+                let this_val = self.stack.pop().unwrap();
+                if let Value::Instance(ref inst) = this_val {
+                    let sup_opt = inst.borrow().class.borrow().superclass.clone();
+                    if let Some(sup) = sup_opt {
+                        let method_opt = if m_name == "initialize" {
+                            sup.borrow().find_constructor()
+                        } else {
+                            sup.borrow().find_method(&m_name)
+                        };
+                        if let Some(method) = method_opt {
+                            let bound = Value::BoundMethod(inst.clone(), method);
+                            let ret = self.call_value(&bound, args, line)?;
+                            self.stack.push(ret);
+                        } else {
+                            self.stack.push(Value::Nil);
+                        }
+                    } else {
+                        self.stack.push(Value::Nil);
+                    }
+                } else {
+                    self.stack.push(Value::Nil);
+                }
+            }
+            OpCode::IsInstance => {
+                let c_idx = self.read_u16();
+                let class_name = format!("{}", self.current_frame().chunk.constants[c_idx as usize]);
+                let val = self.stack.pop().unwrap();
+                let is_inst = match val {
+                    Value::Instance(inst) => inst.borrow().class.borrow().is_subclass_of(&class_name),
+                    _ => false,
+                };
+                self.stack.push(Value::Bool(is_inst));
+            }
+            OpCode::TypeOf => {
+                let val = self.stack.pop().unwrap();
+                let t_name = match val {
+                    Value::Str(_) => "string",
+                    Value::Int(_) => "int",
+                    Value::Float(_) => "float",
+                    Value::Bool(_) => "bool",
+                    Value::List(_) => "list",
+                    Value::Map(_) => "map",
+                    Value::Function(_) | Value::NativeFunction(_, _) | Value::BoundMethod(_, _) => "function",
+                    Value::Class(_) => "class",
+                    Value::Instance(_) => "instance",
+                    Value::Nil => "nil",
+                    _ => "object",
+                };
+                self.stack.push(Value::Str(t_name.to_string()));
+            }
+            OpCode::IsString => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(v, Value::Str(_))));
+            }
+            OpCode::IsNumber => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(v, Value::Int(_) | Value::Float(_))));
+            }
+            OpCode::IsInteger => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(v, Value::Int(_))));
+            }
+            OpCode::IsFloat => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(v, Value::Float(_))));
+            }
+            OpCode::IsBoolean => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(v, Value::Bool(_))));
+            }
+            OpCode::IsList => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(v, Value::List(_))));
+            }
+            OpCode::IsMap => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(v, Value::Map(_))));
+            }
+            OpCode::IsFunction => {
+                let v = self.stack.pop().unwrap();
+                self.stack.push(Value::Bool(matches!(
+                    v,
+                    Value::Function(_) | Value::NativeFunction(_, _) | Value::BoundMethod(_, _)
+                )));
             }
             OpCode::Say => {
                 let count = self.read_byte() as usize;
