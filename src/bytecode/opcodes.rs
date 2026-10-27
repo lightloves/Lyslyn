@@ -1,0 +1,71 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum OpCode {
+    Constant,
+    Nil,
+    True,
+    False,
+    Pop,
+    Dup,
+
+    DefGlobal,
+    GetGlobal,
+    SetGlobal,
+    GetLocal,
+    SetLocal,
+    GetUpvalue,
+    SetUpvalue,
+
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Neg,
+
+    Equal,
+    NotEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    Not,
+    In,
+    NotIn,
+
+    IsPositive,
+    IsNegative,
+    IsZero,
+    IsEven,
+    IsOdd,
+    IsEmpty,
+    IsSomething,
+
+    Jump,
+    JumpIfFalse,
+    Loop,
+
+    PushTry,
+    PopTry,
+    Raise,
+
+    Call,
+    Closure,
+    Return,
+
+    BuildList,
+    BuildMap,
+    IndexGet,
+    IndexSet,
+    GetProperty,
+    SetProperty,
+
+    Say,
+    AddToList,
+    GetModule,
+    Serve,
+    Respond,
+    Validate,
+    HttpRequest,
+    Halt,
+}

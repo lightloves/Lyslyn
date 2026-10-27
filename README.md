@@ -174,35 +174,62 @@ lys init my-service
 
 ```
 lyslyn/
+├── Cargo.toml                 # Cargo manifest and dependencies
 ├── bin/
-│   └── lyslyn                 # Executable CLI launcher
-├── lyslyn/
-│   ├── tokens.py              # Token definitions with backend keywords
-│   ├── lexer.py               # Indentation-aware lexical scanner
-│   ├── ast_nodes.py           # AST definitions (ServeStmt, RouteStmt, RespondStmt, ValidateStmt)
-│   ├── parser.py              # Recursive-descent parser with contextual keywords
-│   ├── semantics.py           # Scope and backend syntax validator
-│   ├── interpreter.py         # AST execution engine and HTTP server runtime
-│   ├── diagnostics.py         # Formatted compiler error reporting
-│   ├── formatter.py           # Code formatter & canonicalizer
-│   ├── bundler.py             # Single-file dependency bundler
-│   ├── watcher.py             # Hot-reload process supervisor
-│   ├── repl.py                # Interactive REPL shell
-│   ├── cli.py                 # Toolchain commands
-│   └── stdlib/                # Standard library modules
-│       ├── db.py              # Built-in SQLite database & ORM layer
-│       ├── server_mod.py      # Multi-threaded HTTP server & routing engine
-│       ├── validation.py      # Request schema validator
-│       ├── crypto_mod.py      # Passwords, HMAC, tokens, UUIDs
-│       ├── jwt_mod.py         # RFC 7519 JSON Web Token signing & verification
-│       ├── cache_mod.py       # In-memory TTL key-value cache
-│       ├── collections_mod.py # High-order Map, Filter, Reduce, Sort, Chunk
-│       ├── tasks_mod.py       # Asynchronous background workers
-│       ├── http.py            # HTTP client (GET, POST, PUT, DELETE)
-│       ├── json_mod.py        # JSON parse & stringify
-│       ├── files.py           # Filesystem I/O
-│       ├── text.py            # String manipulation helpers
-│       └── math_mod.py        # Mathematical operations
+│   ├── lys                    # Fast executable CLI launcher
+│   └── lyslyn                 # Standard executable CLI launcher
+├── src/
+│   ├── main.rs                # Entry point for lyslyn CLI
+│   ├── lib.rs                 # Core library exports
+│   ├── errors/                # Error definitions and source diagnostics
+│   │   └── mod.rs
+│   ├── lexer/                 # Indentation-aware lexical scanner
+│   │   ├── token.rs           # Token types and natural English keywords
+│   │   ├── scanner.rs         # Lexical scanner implementation
+│   │   └── mod.rs
+│   ├── ast/                   # Abstract Syntax Tree nodes
+│   │   └── mod.rs
+│   ├── parser/                # Recursive-descent grammar parser
+│   │   ├── parser.rs          # Parser with operator precedence
+│   │   └── mod.rs
+│   ├── bytecode/              # Bytecode instruction set and disassembler
+│   │   ├── opcodes.rs         # VM OpCode definitions
+│   │   ├── chunk.rs           # Instruction chunk and constants pool
+│   │   └── mod.rs
+│   ├── compiler/              # AST to Bytecode compiler
+│   │   ├── compiler.rs        # Stack frame, scope management, jumps
+│   │   └── mod.rs
+│   ├── vm/                    # Stack-based Rust Virtual Machine
+│   │   ├── vm.rs              # Call frames, environment, opcode dispatch
+│   │   └── mod.rs
+│   ├── values/                # Dynamic runtime value types
+│   │   ├── value.rs           # Value enum (Int, Float, Str, List, Map, Fn)
+│   │   └── mod.rs
+│   ├── modules/               # Native module system
+│   │   ├── loader.rs          # Module caching, relative and stdlib imports
+│   │   └── mod.rs
+│   ├── stdlib/                # Built-in native modules
+│   │   ├── math.rs            # Mathematical functions (sqrt, floor, min, max, pow)
+│   │   ├── json.rs            # Fast JSON parse and stringify
+│   │   ├── fs.rs              # Safe filesystem operations
+│   │   ├── time.rs            # Timestamps, ISO dates, sleep
+│   │   ├── env.rs             # Environment variables and config
+│   │   ├── random.rs          # Random numbers, choices, shuffle
+│   │   ├── text.rs            # String transformations and search
+│   │   ├── crypto.rs          # SHA256, UUID, PBKDF2 password hashing
+│   │   ├── jwt.rs             # RFC 7519 JSON Web Token signing & verify
+│   │   ├── cache.rs           # In-memory millisecond TTL cache
+│   │   ├── collections.rs     # Unique, chunk, flatten, zip
+│   │   ├── validation.rs      # Declarative schema validator
+│   │   ├── db.rs              # In-memory and SQLite relational store
+│   │   ├── server.rs          # HTTP server, CORS, rate-limiting middleware
+│   │   ├── http.rs            # HTTP client (GET, POST)
+│   │   ├── log.rs             # Structured and colorized logging
+│   │   └── mod.rs
+│   ├── package_manager/       # Project init, package install/remove
+│   │   └── mod.rs
+│   └── cli/                   # CLI command handlers, REPL, test runner
+│       └── mod.rs
 ├── examples/
 │   ├── 01_hello.lys           # Basics & arithmetic
 │   ├── 02_control_flow.lys    # Conditionals & loops
@@ -214,17 +241,20 @@ lyslyn/
 │   ├── 08_modules_and_stdlib.lys # Standard library modules
 │   ├── 09_task_manager.lys    # Task persistence application
 │   ├── 10_backend_api_server.lys # Complete Production REST API Server
-│   └── 11_production_jwt_cache_api.lys # Enterprise JWT, Cache, Rate-Limiting API
+│   ├── 11_production_jwt_cache_api.lys # Enterprise JWT, Cache, Rate-Limiting API
+│   └── 12_simple_english_programming.lys # Pure English syntax showcase
 ├── tests/
-│   ├── test_backend_security.lys # Crypto & validation tests
-│   ├── test_db.lys            # Database CRUD & query tests
+│   ├── native_rust_tests.rs   # Rust integration test suite
 │   ├── test_basics.lys        # Core language tests
 │   ├── test_control_flow.lys  # Control flow tests
 │   ├── test_functions.lys     # Closures & recursion tests
 │   ├── test_collections.lys   # Lists & objects tests
 │   ├── test_errors.lys        # Exception handling tests
 │   ├── test_stdlib.lys        # Standard library tests
-│   └── test_compiler_units.py # Python unit test suite
+│   ├── test_db.lys            # Database CRUD & query tests
+│   ├── test_backend_security.lys # Crypto & validation tests
+│   ├── test_jwt_cache_collections.lys # Advanced backend feature tests
+│   └── test_simple_english.lys # Natural English grammar tests
 ├── SPEC.md                    # Formal EBNF Grammar & Backend Specification
 ├── DOCS.md                    # Complete Reference Manual
 └── README.md                  # This file

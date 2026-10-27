@@ -5,3 +5,7 @@ __pycache__/
 .lyslyn_history
 *.tmp
 tmp/
+target/
+.cargo/
+*.lysc
+lyslyn.lock

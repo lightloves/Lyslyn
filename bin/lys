@@ -1,14 +1,29 @@
-#!/usr/bin/env python3
-"""Lyslyn CLI Launcher (short alias: lys)."""
-import sys
-import os
+#!/usr/bin/env bash
+# Lyslyn CLI Launcher (short alias: lys) - Native Rust VM
+set -e
 
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-from lyslyn.cli import main
+# Find native rust executable
+CANDIDATES=(
+    "$HOME/.local/bin/lyslyn"
+    "$HOME/.cargo_target/lyslyn/release/lyslyn"
+    "$REPO_ROOT/target/release/lyslyn"
+    "$(command -v lyslyn 2>/dev/null || true)"
+)
 
-if __name__ == "__main__":
-    main()
+BIN=""
+for c in "${CANDIDATES[@]}"; do
+    if [ -n "$c" ] && [ -x "$c" ]; then
+        BIN="$c"
+        break
+    fi
+done
+
+if [ -z "$BIN" ]; then
+    echo "Error: Lyslyn native binary not found. Please run 'cargo build --release' first." >&2
+    exit 1
+fi
+
+exec "$BIN" "$@"
