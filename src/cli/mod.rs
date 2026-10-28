@@ -60,6 +60,28 @@ pub fn run_cli(args: Vec<String>) -> Result<(), i32> {
             }
             build_file(&args[2], args.get(4).map(|s| s.as_str()))
         }
+        "disasm" => {
+            if args.len() < 3 {
+                eprintln!("{}", "Error: Missing filename to disassemble".red());
+                eprintln!("Usage: lyslyn disasm <file.lys>");
+                return Err(1);
+            }
+            disassemble_file(&args[2])
+        }
+        "bench" => {
+            if args.len() < 3 {
+                eprintln!("{}", "Error: Missing filename to benchmark".red());
+                eprintln!("Usage: lyslyn bench <file.lys> [-n iterations]");
+                return Err(1);
+            }
+            let iterations = args
+                .iter()
+                .position(|a| a == "-n")
+                .and_then(|idx| args.get(idx + 1))
+                .and_then(|val| val.parse::<usize>().ok())
+                .unwrap_or(10);
+            benchmark_file(&args[2], iterations)
+        }
         "repl" => run_repl(),
         "test" => run_test_suite(),
         "init" => {
@@ -225,6 +247,93 @@ pub fn build_file(filename: &str, out_path: Option<&str>) -> Result<(), i32> {
     Ok(())
 }
 
+pub fn disassemble_file(filename: &str) -> Result<(), i32> {
+    let source = fs::read_to_string(filename).map_err(|e| {
+        eprintln!("{}: Cannot read file '{}': {}", "Error".red(), filename, e);
+        1
+    })?;
+
+    let mut scanner = Scanner::new(&source, filename);
+    let tokens = scanner.scan_tokens().map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    let mut parser = Parser::new(tokens, filename, &source);
+    let program = parser.parse().map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    let mut compiler = Compiler::new(filename, &source);
+    let chunk = compiler.compile(&program).map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    println!("{}", chunk.disassemble(Some(filename)));
+    Ok(())
+}
+
+pub fn benchmark_file(filename: &str, iterations: usize) -> Result<(), i32> {
+    let source = fs::read_to_string(filename).map_err(|e| {
+        eprintln!("{}: Cannot read file '{}': {}", "Error".red(), filename, e);
+        1
+    })?;
+
+    let mut scanner = Scanner::new(&source, filename);
+    let tokens = scanner.scan_tokens().map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    let mut parser = Parser::new(tokens, filename, &source);
+    let program = parser.parse().map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    let mut compiler = Compiler::new(filename, &source);
+    let chunk = compiler.compile(&program).map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    println!(
+        "{} Benchmarking '{}' over {} iterations...",
+        "⚡".yellow().bold(),
+        filename,
+        iterations
+    );
+
+    let mut durations: Vec<std::time::Duration> = Vec::with_capacity(iterations);
+    for _ in 0..iterations {
+        let mut vm = VM::new(None);
+        if let Some(parent) = Path::new(filename).parent() {
+            vm.module_loader.add_search_path(parent.to_path_buf());
+        }
+        let start = Instant::now();
+        let _ = vm.run(chunk.clone()).map_err(|e| {
+            eprintln!("{}", e.format_diagnostic().red());
+            1
+        })?;
+        durations.push(start.elapsed());
+    }
+
+    let total: std::time::Duration = durations.iter().sum();
+    let avg = total / iterations as u32;
+    let min = durations.iter().min().cloned().unwrap_or_default();
+    let max = durations.iter().max().cloned().unwrap_or_default();
+    let ops_per_sec = 1_000_000.0 / avg.as_micros().max(1) as f64;
+
+    println!("  • Iterations: {}", iterations);
+    println!("  • Average:    {:.2?}", avg);
+    println!("  • Min:        {:.2?}", min);
+    println!("  • Max:        {:.2?}", max);
+    println!("  • Throughput: {:.1} runs/sec", ops_per_sec);
+    Ok(())
+}
+
 pub fn run_repl() -> Result<(), i32> {
     println!("{}", "Lyslyn 2.0.0 Interactive REPL".cyan().bold());
     println!("Type 'exit' to quit. Multiline blocks use 4-space indentation.\n");
@@ -381,8 +490,11 @@ fn print_help() {
     println!("Usage:");
     println!("  lyslyn <file.lys> [args...]       Execute a Lyslyn script directly");
     println!("  lyslyn run <file.lys> [args...]   Execute a Lyslyn script");
+    println!("  lyslyn -c '<code>'                Execute inline code string");
     println!("  lyslyn check <file.lys>           Parse and statically check a script");
     println!("  lyslyn build <file.lys>           Compile to binary bytecode (.lysc)");
+    println!("  lyslyn disasm <file.lys>          Disassemble to human-readable bytecode");
+    println!("  lyslyn bench <file.lys> [-n N]    Benchmark execution latency & throughput");
     println!("  lyslyn repl                       Start the interactive REPL");
     println!("  lyslyn test                       Run all tests in tests/ directory");
     println!("  lyslyn init [name]                Initialize a new Lyslyn project");

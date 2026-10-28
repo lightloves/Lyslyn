@@ -71,7 +71,66 @@ impl Chunk {
         };
 
         let byte = self.code[offset];
-        let op_str = format!("{:04} {}{:?}", offset, line_prefix, byte);
+        if let Some(op) = OpCode::from_u8(byte) {
+            match op {
+                OpCode::Constant => {
+                    if offset + 2 < self.code.len() {
+                        let idx = ((self.code[offset + 1] as u16) << 8) | (self.code[offset + 2] as u16);
+                        let val_str = if (idx as usize) < self.constants.len() {
+                            format!("{}", self.constants[idx as usize])
+                        } else {
+                            "<unknown>".to_string()
+                        };
+                        let s = format!("{:04} {}{:16} {:4} ('{}')", offset, line_prefix, "CONSTANT", idx, val_str);
+                        return (offset + 3, s);
+                    }
+                }
+                OpCode::DefGlobal | OpCode::GetGlobal | OpCode::SetGlobal | OpCode::GetModule => {
+                    if offset + 2 < self.code.len() {
+                        let idx = ((self.code[offset + 1] as u16) << 8) | (self.code[offset + 2] as u16);
+                        let val_str = if (idx as usize) < self.constants.len() {
+                            format!("{}", self.constants[idx as usize])
+                        } else {
+                            "<unknown>".to_string()
+                        };
+                        let s = format!("{:04} {}{:16} {:4} ('{}')", offset, line_prefix, format!("{:?}", op), idx, val_str);
+                        return (offset + 3, s);
+                    }
+                }
+                OpCode::GetLocal | OpCode::SetLocal | OpCode::GetUpvalue | OpCode::SetUpvalue => {
+                    if offset + 2 < self.code.len() {
+                        let slot = ((self.code[offset + 1] as u16) << 8) | (self.code[offset + 2] as u16);
+                        let s = format!("{:04} {}{:16} slot:{}", offset, line_prefix, format!("{:?}", op), slot);
+                        return (offset + 3, s);
+                    }
+                }
+                OpCode::Jump | OpCode::JumpIfFalse | OpCode::Loop => {
+                    if offset + 2 < self.code.len() {
+                        let jmp = ((self.code[offset + 1] as u16) << 8) | (self.code[offset + 2] as u16);
+                        let target = if op == OpCode::Loop {
+                            offset.saturating_add(3).saturating_sub(jmp as usize)
+                        } else {
+                            offset + 3 + (jmp as usize)
+                        };
+                        let s = format!("{:04} {}{:16} -> {:04}", offset, line_prefix, format!("{:?}", op), target);
+                        return (offset + 3, s);
+                    }
+                }
+                OpCode::Call => {
+                    if offset + 1 < self.code.len() {
+                        let arity = self.code[offset + 1];
+                        let s = format!("{:04} {}{:16} args:{}", offset, line_prefix, "CALL", arity);
+                        return (offset + 2, s);
+                    }
+                }
+                _ => {
+                    let s = format!("{:04} {}{:?}", offset, line_prefix, op);
+                    return (offset + 1, s);
+                }
+            }
+        }
+
+        let op_str = format!("{:04} {}{:#04x}", offset, line_prefix, byte);
         (offset + 1, op_str)
     }
 }
