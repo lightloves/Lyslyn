@@ -1,5 +1,7 @@
+# Native client HTTP requests in Simple English
 Import json
 
+# Sending a GET request
 Print "Sending HTTP GET request..."
 Send a GET request to "https://httpbin.org/get" save response as get_resp
 
@@ -9,6 +11,7 @@ Print "Request was OK?:", get_resp.ok
 Set get_data to get_resp.json()
 Print "Remote URL returned by server:", get_data.url
 
+# Sending a POST request with headers and body data
 Print "\nSending HTTP POST request with structured payload..."
 Send a POST request to "https://httpbin.org/post":
     headers: {

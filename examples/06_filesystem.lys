@@ -1,3 +1,4 @@
+# Native filesystem and JSON serialization
 Import files
 Import json
 
@@ -5,6 +6,7 @@ Set file_path to "./demo_output.json"
 
 Print "Writing data to file:", file_path
 
+# Create structured dictionary payload
 Set app_state to {
     "app": "Lyslyn Demo",
     "status": "ready",
@@ -12,12 +14,14 @@ Set app_state to {
     "features": ["English Syntax", "Bytecode VM Ready", "Batteries Included"]
 }
 
+# Serialize dictionary to JSON string and write to file
 Set json_data to json.stringify(app_state, 2)
 files.write_text(file_path, json_data)
 
 If files.exists(file_path):
     Print "File successfully written to disk!"
 
+# Read text from file and deserialize from JSON
 Set loaded_raw to files.read_text(file_path)
 Set loaded_obj to json.parse(loaded_raw)
 
@@ -25,5 +29,6 @@ Print "\nLoaded from file:"
 Print "  App Name:", loaded_obj.app
 Print "  Features count:", loaded_obj.features.length
 
+# Safe file deletion and cleanup
 files.delete(file_path)
 Print "Cleaned up demo file. Exists now?:", files.exists(file_path)

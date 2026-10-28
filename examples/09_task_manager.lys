@@ -1,9 +1,11 @@
+# Task management application demonstrating JSON persistence and CRUD operations
 Import files
 Import json
 Import time
 
 Set db_file to "./tasks_db.json"
 
+# Initialize database file if not present
 Create a function called init_db:
     If not files.exists(db_file):
         Set initial_data to {
@@ -12,11 +14,13 @@ Create a function called init_db:
         }
         files.write_text(db_file, json.stringify(initial_data, 2))
 
+# Load task array from JSON file
 Create a function called load_tasks:
     Set raw to files.read_text(db_file)
     Set db to json.parse(raw)
     Return db.tasks
 
+# Save task array back to disk
 Create a function called save_tasks with tasks_list:
     Set db to {
         "version": 1,
@@ -24,6 +28,7 @@ Create a function called save_tasks with tasks_list:
     }
     files.write_text(db_file, json.stringify(db, 2))
 
+# Create a new task item
 Create a function called add_task with title, priority:
     Set tasks to load_tasks()
     Set new_task to {
@@ -37,6 +42,7 @@ Create a function called add_task with title, priority:
     save_tasks(tasks)
     Print "✓ Added task:", title
 
+# Update task status to completed
 Create a function called complete_task with task_id:
     Set tasks to load_tasks()
     For each t in tasks:
@@ -48,6 +54,7 @@ Create a function called complete_task with task_id:
     Print "✗ Task {task_id} not found."
     Return false
 
+# Render formatted task list
 Create a function called list_tasks:
     Set tasks to load_tasks()
     Print "\n==================== TASK LIST ===================="
@@ -59,6 +66,7 @@ Create a function called list_tasks:
             Print "  {status_mark} #{t.id}: {t.title} (Priority: {t.priority})"
     Print "===================================================\n"
 
+# Execute application workflow
 init_db()
 
 Print "--- Initializing Task System ---"
@@ -77,5 +85,6 @@ complete_task(3)
 
 list_tasks()
 
+# Cleanup database file after demo
 files.delete(db_file)
 Print "✓ Demo completed and database cleaned up."

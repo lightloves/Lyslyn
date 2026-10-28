@@ -1,11 +1,14 @@
+# Basic variables and constants in Simple English
 Set greeting to "Hello"
 Set target to "World"
 Constant LANGUAGE_NAME is "Lyslyn"
 Constant VERSION is 1.0
 
+# String interpolation and console output
 Print "{greeting}, {target}!"
 Print "Welcome to {LANGUAGE_NAME} version {VERSION}."
 
+# Basic arithmetic operations
 Set x to 25
 Set y to 4
 Set sum to x + y
@@ -16,6 +19,7 @@ Print "Sum:", sum
 Print "Product:", product
 Print "Quotient:", quotient
 
+# Boolean flags and conditional branching
 Set is_ready to true
 If is_ready:
     Print "System is ready to compute!"

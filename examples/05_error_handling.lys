@@ -1,8 +1,10 @@
+# Raising custom errors in Simple English
 Create a function called divide_safe with a, b:
     If b is equal to 0:
         Raise error "Division by zero is not allowed"
     Return a / b
 
+# Structured exception handling with Try, Catch, and Finally
 Try:
     Print "Attempting 10 / 2..."
     Set result to divide_safe(10, 2)

@@ -1,12 +1,17 @@
+# Showcase of pure, structured Simple English programming in Lyslyn
 Set developer to "Raj"
 Set age to 21
+
+# Natural English list declaration with "a list of ... and ..."
 Set programming_languages to a list of "Lyslyn", "Python", "Rust" and "TypeScript"
 
+# Natural English collection mutation with "Add ... to ..."
 Add "SQL" to programming_languages
 
 Display "Developer:", developer
 Display "Languages mastered:", programming_languages
 
+# Natural English object definition with "an object with:"
 Set workstation to an object with:
     hostname: "workstation-01"
     os: "Linux"
@@ -15,6 +20,7 @@ Set workstation to an object with:
 Display "Workstation hostname:", workstation.hostname
 Display "Operating system:", workstation.os
 
+# Natural English comparison operators: "is at least", "is not empty", "is odd"
 If age is at least 18:
     Display "Developer is an adult."
 Otherwise:
@@ -30,6 +36,7 @@ If empty_inbox is empty:
 If age is odd:
     Display "Age ({age}) is an odd number."
 
+# Natural English iteration with "For every ... in ..." and "Skip to next"
 Display "\n--- Iterating Over Skills ---"
 For every lang in programming_languages:
     If lang is equal to "Lyslyn":
@@ -37,10 +44,12 @@ For every lang in programming_languages:
         Skip to next
     Display "Skill:", lang
 
+# Natural English repetition with "Do n times:"
 Display "\n--- Repeating an Action ---"
 Do 3 times:
     Display "Lyslyn code reads like clear English prose!"
 
+# Natural English function definition with "Give back" return
 Create a function called build_greeting with name and title:
     Set full_msg to "Greetings, " + title + " " + name + "! Welcome to Lyslyn."
     Give back full_msg
@@ -48,6 +57,7 @@ Create a function called build_greeting with name and title:
 Set greeting to build_greeting("Raj", "Lead Engineer")
 Display greeting
 
+# Natural English function calling with "Call ... with ... and ..."
 Create a function called announce with event and date:
     Display "Announcement: [" + event + "] scheduled on " + date
 

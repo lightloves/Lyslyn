@@ -1,3 +1,4 @@
+# Natural English conditions with If and Otherwise
 Set score to 85
 
 If score is at least 90:
@@ -9,21 +10,25 @@ Otherwise if score is at least 70:
 Otherwise:
     Print "Grade: Needs improvement"
 
+# While loop with natural English condition
 Print "\n--- Counting Up with While Loop ---"
 Set counter to 1
 While counter is at most 5:
     Print "Counter is at:", counter
     Increase counter by 1
 
+# For-each iteration over a list
 Print "\n--- Iterating with For-Each Loop ---"
 Set languages to ["Lyslyn", "Python", "Rust", "TypeScript"]
 For each lang in languages:
     Print "Language option:", lang
 
+# Fixed-count repetition
 Print "\n--- Repeating an Action ---"
 Repeat 3 times:
     Print "Lyslyn is simple and expressive!"
 
+# Loop control using Break and Continue
 Print "\n--- Loop Control (Break & Continue) ---"
 Set num to 0
 While num < 10:

@@ -1,3 +1,4 @@
+# Production backend server with JWT auth, TTL caching, and rate limiting
 Import env
 Import log
 Import jwt
@@ -6,11 +7,13 @@ Import server
 Import crypto
 Import collections
 
+# Configuration and environment setup
 Set port to env.get_int("PORT", 8080)
 Set jwt_secret to env.get("JWT_SECRET", "super-secure-production-secret-key-32b")
 log.set_level("info")
 log.info("Booting Lyslyn Enterprise Server...", {"port": port, "env": "production"})
 
+# Mock database records with secure password hashing
 Set hashed_pw to crypto.hash_password("admin123")
 Set users_db to {
     "admin": {
@@ -29,6 +32,7 @@ Set inventory to [
     {"id": 5, "name": "UPS Backup Power Unit 3000VA", "price": 950, "category": "power", "stock": 6}
 ]
 
+# Launch server with enterprise middleware pipeline
 Serve HTTP on port port:
 
     Use middleware server.cors("*")
@@ -36,6 +40,7 @@ Serve HTTP on port port:
     Use middleware server.rate_limit(100, 60)
     Use middleware server.jwt_auth(jwt_secret, ["/health", "/api/auth/login", "/api/catalog"])
 
+    # Health check route
     Route GET "/health":
         Respond with status 200 and json {
             "status": "healthy",
@@ -43,6 +48,7 @@ Serve HTTP on port port:
             "cache_size": cache.size()
         }
 
+    # Authentication route generating signed JWT token
     Route POST "/api/auth/login":
         Validate body with {
             "username": "required string",
@@ -78,15 +84,15 @@ Serve HTTP on port port:
             }
         }
 
+    # Protected profile endpoint using JWT claims from request.user
     Route GET "/api/me":
-
         Respond with status 200 and json {
             "authenticated": true,
             "claims": request.user
         }
 
+    # Public catalog endpoint with TTL cache fallback
     Route GET "/api/catalog":
-
         Set cached_catalog to cache.get("catalog:available")
         If cached_catalog is not nil:
             Respond with status 200 and json {
@@ -99,6 +105,7 @@ Serve HTTP on port port:
 
         Set available_items to Filter(inventory, in_stock)
 
+        # Cache available items for 30 seconds
         cache.set("catalog:available", available_items, 30)
 
         Respond with status 200 and json {
@@ -107,6 +114,7 @@ Serve HTTP on port port:
             "items": available_items
         }
 
+    # Role-restricted admin endpoint to purge cache
     Route POST "/api/admin/cache/clear":
         If request.user.role does not equal "superadmin":
             Respond with status 403 and json {"error": "Forbidden: superadmin required"}

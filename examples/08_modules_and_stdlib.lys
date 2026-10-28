@@ -1,21 +1,26 @@
+# Importing built-in standard library modules
 Import math
 Import text
 Import time
 Import random
 Import log
 
+# Importing user-defined local modules with alias
 Import "./math_utils.lys" as math_utils
 
+# Standard math operations
 Print "--- Math Module ---"
 Print "Value of PI:", math.pi
 Print "Square root of 144:", math.sqrt(144)
 Print "Round 3.14159 to 2 decimals:", math.round(3.14159, 2)
 
+# Calling functions from a local module
 Print "\n--- Local Module (math_utils) ---"
 Print "Square of 7:", math_utils.square(7)
 Print "Cube of 3:", math_utils.cube(3)
 Print "Is 10 even?:", math_utils.is_even(10)
 
+# String and text manipulations
 Print "\n--- Text Module ---"
 Set raw_str to "   Welcome to Lyslyn   "
 Set clean_str to text.trim(raw_str)
@@ -23,6 +28,7 @@ Print "Trimmed:", clean_str
 Print "Uppercase:", text.uppercase(clean_str)
 Print "Split words:", text.split(clean_str, " ")
 
+# Time, random numbers, and structured logging
 Print "\n--- Time and Random Modules ---"
 Print "Current ISO Timestamp:", time.now()
 Set lucky_number to random.integer(1, 100)

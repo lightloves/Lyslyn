@@ -1,8 +1,10 @@
+# Full production REST API server with SQLite persistence and route handling
 Import db
 Import server
 Import crypto
 Import time
 
+# Connect to database file and configure schema
 db.connect("./products_store.db")
 
 db.create_table("products", {
@@ -14,6 +16,7 @@ db.create_table("products", {
     "created_at": "TEXT NOT NULL"
 })
 
+# Seed initial catalog data if empty
 If db.count("products") is equal to 0:
     db.insert("products", {
         "name": "Mechanical Keyboard",
@@ -31,10 +34,12 @@ If db.count("products") is equal to 0:
     })
     Print "✓ Seeded initial database records."
 
+# Start native HTTP server with route handlers and middleware
 Serve HTTP on port 8080:
     Use middleware server.cors("*")
     Use middleware server.logger()
 
+    # Health check endpoint
     Route GET "/health":
         Respond with status 200 and json {
             "status": "healthy",
@@ -42,6 +47,7 @@ Serve HTTP on port 8080:
             "timestamp": time.now()
         }
 
+    # API index route
     Route GET "/":
         Respond with status 200 and json {
             "name": "Lyslyn Inventory & Products API",
@@ -55,6 +61,7 @@ Serve HTTP on port 8080:
             ]
         }
 
+    # List all products
     Route GET "/api/products":
         Set all_products to db.query("SELECT * FROM products ORDER BY id DESC")
         Respond with status 200 and json {
@@ -62,6 +69,7 @@ Serve HTTP on port 8080:
             "data": all_products
         }
 
+    # Retrieve single product by path parameter :id
     Route GET "/api/products/:id":
         Set item to db.find_one("products", {"id": request.params.id})
         If item is nil:
@@ -74,6 +82,7 @@ Serve HTTP on port 8080:
                 "product": item
             }
 
+    # Create new product with body validation
     Route POST "/api/products":
         Validate body with {
             "name": "required string min:3",
@@ -95,6 +104,7 @@ Serve HTTP on port 8080:
             "product": new_product
         }
 
+    # Delete product by ID
     Route DELETE "/api/products/:id":
         Set rows to db.delete("products", {"id": request.params.id})
         If rows is equal to 0:

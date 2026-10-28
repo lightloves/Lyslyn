@@ -1,3 +1,4 @@
+# Reusable math utility functions demonstrating module export
 Create a function called square with x:
     Return x * x
 

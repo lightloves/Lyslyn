@@ -1,8 +1,10 @@
+# Java and Python level OOP, reflection, regex, and OS APIs in Simple English
 Get regex
 Get os
 Get math
 Get text
 
+# Base class definition with constructor and bound methods
 Define a class called Account:
     To initialize with owner, initial_balance:
         Set this.owner to owner
@@ -22,6 +24,7 @@ Define a class called Account:
     Method get_summary:
         Return this.owner + " has balance $" + this.balance
 
+# Subclassing and superclass delegation with Call parent
 Define a class called PremiumAccount inheriting from Account:
     To initialize with owner, initial_balance, cashback_rate:
         Call parent with owner, initial_balance
@@ -37,6 +40,7 @@ Define a class called PremiumAccount inheriting from Account:
 
 Say "=== Lyslyn Object-Oriented Programming ==="
 
+# Instantiating objects with "a new <Class> with ..."
 Set acc1 to a new Account with "Alice", 1000
 Say acc1.get_summary()
 acc1.deposit(250)
@@ -50,6 +54,7 @@ Say acc2.get_summary()
 acc2.deposit(1000)
 Say "After premium deposit (with 5% bonus):", acc2.get_summary()
 
+# Dynamic type inspection and reflection
 Say "\n=== Type Reflection & Dynamic Inspection ==="
 Say "acc1 is an instance of Account?:", acc1 is an instance of Account
 Say "acc2 is an instance of Account?:", acc2 is an instance of Account
@@ -59,6 +64,7 @@ Say "Type of acc1:", type(acc1)
 Say "Type of Account:", type(Account)
 Say "Type of acc1.balance:", type(acc1.balance)
 
+# Regular expressions pattern matching and replacement
 Say "\n=== Industrial Regular Expressions ==="
 Set email to "engineer@lyslyn.org"
 Set valid_email to regex.is_match("^[a-z]+@[a-z]+\\.[a-z]+$", email)
@@ -71,16 +77,19 @@ Say "Extracted status code:", code
 Set sanitized to regex.replace("ERROR", "CRITICAL", log_entry)
 Say "Sanitized log:", sanitized
 
+# Operating system and architecture introspection
 Say "\n=== Operating System & Systems Programming ==="
 Say "Host Operating System:", os.platform()
 Say "CPU Architecture:", os.arch()
 Say "Current Working Directory:", os.cwd()
 
+# Advanced trigonometry and numeric routines
 Say "\n=== Advanced Mathematical Algorithms ==="
 Say "Sine of 90 degrees (pi / 2):", math.sin(math.pi / 2)
 Say "Hypotenuse of 5 and 12:", math.hypot(5, 12)
 Say "Degrees in pi radians:", math.degrees(math.pi)
 
+# Advanced text padding and searching
 Say "\n=== Advanced Text & String Manipulation ==="
 Say "Padded Order ID:", text.pad_start("742", 8, "0")
 Say "Repeated divider:", text.repeat("=-", 15)
