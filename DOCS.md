@@ -49,7 +49,6 @@ Save the following code as `api.lys`:
 Import db
 Import server
 
-# 1. Connect to SQLite database
 db.connect("./app.db")
 db.create_table("users", {
     "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -57,7 +56,6 @@ db.create_table("users", {
     "email": "TEXT UNIQUE NOT NULL"
 })
 
-# 2. Start HTTP Server
 Serve HTTP on port 8080:
     Use middleware server.cors("*")
     Use middleware server.logger()
@@ -118,7 +116,6 @@ Lyslyn replaces traditional punctuation and cryptic syntax symbols with structur
 ## 4. Simple English Collections & Objects
 
 ```lys
-# 1. Natural English Lists
 Set fruits to a list of "apple", "banana" and "cherry"
 Add "mango" to fruits
 
@@ -126,13 +123,11 @@ Set inbox to an empty list
 If inbox is empty:
     Display "Zero messages pending."
 
-# 2. Natural English Objects
 Set user to an object with:
     username: "Raj"
     role: "Architect"
     age: 21
 
-# Inline style
 Set server_cfg to an object with host = "127.0.0.1", port = 8080
 ```
 
@@ -141,7 +136,6 @@ Set server_cfg to an object with host = "127.0.0.1", port = 8080
 ## 5. Control Flow, Functions, and Error Handling in English
 
 ```lys
-# Conditionals
 If balance is positive:
     Display "In good credit."
 Otherwise if balance is zero:
@@ -149,7 +143,6 @@ Otherwise if balance is zero:
 Otherwise:
     Display "In debt."
 
-# Repetition & Loops
 For every fruit in fruits:
     If fruit is equal to "banana":
         Skip to next
@@ -158,7 +151,6 @@ For every fruit in fruits:
 Do 3 times:
     Display "Lyslyn is simple English!"
 
-# Functions
 Create a function called greet with name and title:
     Give back "Hello " + title + " " + name
 
@@ -174,7 +166,8 @@ The `Serve` statement initializes a multi-threaded, non-blocking socket server:
 
 ```lys
 Serve HTTP on port 8080:
-    # Middleware and routes go here
+    Use middleware server.cors("*")
+    Use middleware server.logger()
 ```
 
 Custom host binding:
@@ -270,10 +263,7 @@ Lyslyn includes a zero-dependency, production-ready SQLite database and ORM laye
 ```lys
 Import db
 
-# Connect to a file database
 db.connect("./production.db")
-
-# Or an in-memory database (ideal for tests)
 db.connect(":memory:")
 ```
 
@@ -290,7 +280,6 @@ db.create_table("customers", {
 
 ### High-Level CRUD
 ```lys
-# Insert
 Set user to db.insert("customers", {
     "name": "Raj",
     "email": "raj@example.com",
@@ -299,22 +288,12 @@ Set user to db.insert("customers", {
 })
 Print "Inserted user ID:", user.id
 
-# Find all
 Set all_users to db.find("customers")
-
-# Find with conditions and sorting
 Set active to db.find("customers", {"balance": 250.0}, "name ASC", 10)
-
-# Find one
 Set customer to db.find_one("customers", {"email": "raj@example.com"})
 
-# Update
 db.update("customers", {"id": user.id}, {"balance": 300.0})
-
-# Delete
 db.delete("customers", {"id": user.id})
-
-# Count
 Set total to db.count("customers")
 ```
 
@@ -332,21 +311,14 @@ Print "Rows updated:", result.rows_affected
 ```lys
 Import crypto
 
-# Production password hashing (PBKDF2 HMAC-SHA256 with random salt)
 Set password to "MySecureP@ssword123!"
 Set hashed to crypto.hash_password(password)
 
-# Verification
 If crypto.verify_password("MySecureP@ssword123!", hashed):
     Print "Password is valid!"
 
-# Cryptographic random token (e.g. for API tokens, reset tokens, sessions)
 Set session_token to crypto.token(32)
-
-# UUID generation
 Set request_id to crypto.uuid()
-
-# SHA-256 and MD5 hashes
 Set hash_val to crypto.sha256("payload string")
 ```
 
@@ -382,68 +354,17 @@ Set hash_val to crypto.sha256("payload string")
 The toolchain is available through both `lyslyn` and its short alias `lys`:
 
 ```bash
-# 1. Run any script directly (just like python)
 lys server.lys
 lyslyn server.lys
-
-# 2. Run in live hot-reload development mode
-lys watch server.lys
-# or: lys server.lys --watch
-
-# 3. Bundle all local dependencies into a single distribution file
-lys bundle server.lys -o app_bundle.lys
-
-# 4. Run with arguments passed to the script
 lys server.lys --port 8080 prod
-
-# 5. Run compiled bytecode (.lysc) directly with instant VM startup
-lys server.lysc
-
-# 6. Run inline code snippets
-lys -c "Print 'Hello world!'"
-
-# 7. Start interactive REPL (just type lys)
-lys
-
-# 8. Backward-compatible explicit run command
-lys run server.lys
-
-# Compile source to bytecode binary (.lysc)
-lys compile server.lys -o server.lysc
-
-# Disassemble bytecode instructions
-lys disasm server.lys
-
-# Run static analysis linter
-lys lint [path]
-
-# Run microbenchmarks
-lys bench benchmark.lys -n 100
-
-# Generate API documentation
-lys doc [path] -o docs.md
-
-# Validate syntax and types without running
+lys -c 'Say "Hello world!"'
 lys check server.lys
-
-# Run all test suites
-lys test
-
-# Beautify code in-place
-lys format -w
-
-# Check formatting without writing
-lys format --check
-
-# Package manager commands
-lys add @lyslyn/logger 1.2.0
-lys remove @lyslyn/logger
-lys install
-lys pack
-
-# Scaffold a new project
-lys init my-backend
-
-# Start interactive REPL
+lys build server.lys -o server.lysc
+lys disasm server.lys
+lys bench server.lys -n 100
 lys repl
+lys test
+lys init my-backend
+lys install package_name
+lys remove package_name
 ```

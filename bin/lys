@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Lyslyn CLI Launcher (short alias: lys) - Native Rust VM
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Find native rust executable
 CANDIDATES=(
     "$HOME/.local/bin/lyslyn"
     "$HOME/.cargo_target/lyslyn/release/lyslyn"

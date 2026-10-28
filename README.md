@@ -34,7 +34,6 @@
 Lyslyn is engineered so that **every program reads like clear, structured English prose**, eliminating cryptic symbols and bracket fatigue:
 
 ```lys
-# Simple English Collections & Variables
 Set languages to a list of "Lyslyn", "Python" and "Rust"
 Add "SQL" to languages
 
@@ -43,7 +42,6 @@ Set profile to an object with:
     role: "Architect"
     age: 21
 
-# Natural English Conditionals
 If profile.age is at least 18:
     Display "Welcome, adult user!"
 
@@ -53,7 +51,6 @@ If languages is not empty:
 If profile.age is odd:
     Display "Age is an odd number."
 
-# Natural English Loops
 For every lang in languages:
     If lang is equal to "Lyslyn":
         Display "Found primary language!"
@@ -62,7 +59,6 @@ For every lang in languages:
 Do 3 times:
     Display "Lyslyn makes coding simple English!"
 
-# Natural English Functions & Returns
 Create a function called greet with name and role:
     Give back "Hello " + name + " (" + role + ")"
 
@@ -77,7 +73,6 @@ Call greet with "Raj" and "Architect"
 Import db
 Import server
 
-# Connect to database and ensure table exists
 db.connect("./store.db")
 db.create_table("items", {
     "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -85,7 +80,6 @@ db.create_table("items", {
     "price": "REAL NOT NULL"
 })
 
-# Launch production server
 Serve HTTP on port 8080:
     Use middleware server.cors("*")
     Use middleware server.logger()
@@ -120,53 +114,18 @@ Serve HTTP on port 8080:
 Both `lyslyn` and its short alias `lys` are installed and available in `$PATH`:
 
 ```bash
-# 1. Run any script directly (just like python)
 lys examples/01_hello.lys
-
-# 2. Run with arguments passed through
 lys examples/01_hello.lys foo bar
-
-# 3. Run inline code snippets
-lys -c "Print 'Hello from Lyslyn!'"
-
-# 4. Run in live hot-reload development mode
-lys watch examples/10_backend_api_server.lys
-# or: lys --watch examples/10_backend_api_server.lys
-
-# 5. Bundle project dependencies into a single distribution file
-lys bundle examples/08_modules_and_stdlib.lys -o app_bundle.lys
-
-# 6. Start interactive REPL (just type `lys`)
-lys
-
-# 7. Run compiled bytecode (.lysc) directly with instant VM startup
-lys hello.lysc
-
-# --- Developer Toolchain Commands ---
-
-# Compile to binary bytecode (.lysc)
-lys compile examples/01_hello.lys -o hello.lysc
-
-# Disassemble bytecode instructions
+lys -c 'Say "Hello from Lyslyn!"'
+lys check examples/01_hello.lys
+lys build examples/01_hello.lys -o hello.lysc
 lys disasm examples/01_hello.lys
-
-# Run static analysis linter
-lys lint examples/
-
-# Benchmark execution throughput
 lys bench examples/01_hello.lys -n 100
-
-# Generate API documentation
-lys doc examples/math_utils.lys
-
-# Run all test suites
+lys repl
 lys test
-
-# Beautify code in-place
-lys format -w
-
-# Scaffold a new project
-lys init my-service
+lys init my_service
+lys install package_name
+lys remove package_name
 ```
 
 ---
@@ -175,94 +134,94 @@ lys init my-service
 
 ```
 lyslyn/
-├── Cargo.toml                 # Cargo manifest and dependencies
+├── Cargo.toml
 ├── bin/
-│   ├── lys                    # Fast executable CLI launcher
-│   └── lyslyn                 # Standard executable CLI launcher
+│   ├── lys
+│   └── lyslyn
 ├── src/
-│   ├── main.rs                # Entry point for lyslyn CLI
-│   ├── lib.rs                 # Core library exports
-│   ├── errors/                # Error definitions and source diagnostics
+│   ├── main.rs
+│   ├── lib.rs
+│   ├── errors/
 │   │   └── mod.rs
-│   ├── lexer/                 # Indentation-aware lexical scanner
-│   │   ├── token.rs           # Token types and natural English keywords
-│   │   ├── scanner.rs         # Lexical scanner implementation
+│   ├── lexer/
+│   │   ├── token.rs
+│   │   ├── scanner.rs
 │   │   └── mod.rs
-│   ├── ast/                   # Abstract Syntax Tree nodes
+│   ├── ast/
 │   │   └── mod.rs
-│   ├── parser/                # Recursive-descent grammar parser
-│   │   ├── parser.rs          # Parser with operator precedence
+│   ├── parser/
+│   │   ├── parser.rs
 │   │   └── mod.rs
-│   ├── bytecode/              # Bytecode instruction set and disassembler
-│   │   ├── opcodes.rs         # VM OpCode definitions
-│   │   ├── chunk.rs           # Instruction chunk and constants pool
+│   ├── bytecode/
+│   │   ├── opcodes.rs
+│   │   ├── chunk.rs
 │   │   └── mod.rs
-│   ├── compiler/              # AST to Bytecode compiler
-│   │   ├── compiler.rs        # Stack frame, scope management, jumps
+│   ├── compiler/
+│   │   ├── compiler.rs
 │   │   └── mod.rs
-│   ├── vm/                    # Stack-based Rust Virtual Machine
-│   │   ├── vm.rs              # Call frames, environment, opcode dispatch
+│   ├── vm/
+│   │   ├── vm.rs
 │   │   └── mod.rs
-│   ├── values/                # Dynamic runtime value types
-│   │   ├── value.rs           # Value enum (Int, Float, Str, List, Map, Fn)
+│   ├── values/
+│   │   ├── value.rs
 │   │   └── mod.rs
-│   ├── modules/               # Native module system
-│   │   ├── loader.rs          # Module caching, relative and stdlib imports
+│   ├── modules/
+│   │   ├── loader.rs
 │   │   └── mod.rs
-│   ├── stdlib/                # Built-in native modules
-│   │   ├── math.rs            # Mathematical functions (sqrt, floor, min, max, pow)
-│   │   ├── json.rs            # Fast JSON parse and stringify
-│   │   ├── fs.rs              # Safe filesystem operations
-│   │   ├── time.rs            # Timestamps, ISO dates, sleep
-│   │   ├── env.rs             # Environment variables and config
-│   │   ├── random.rs          # Random numbers, choices, shuffle
-│   │   ├── text.rs            # String transformations and search
-│   │   ├── crypto.rs          # SHA256, UUID, PBKDF2 password hashing
-│   │   ├── jwt.rs             # RFC 7519 JSON Web Token signing & verify
-│   │   ├── cache.rs           # In-memory millisecond TTL cache
-│   │   ├── collections.rs     # Unique, chunk, flatten, zip
-│   │   ├── validation.rs      # Declarative schema validator
-│   │   ├── db.rs              # In-memory and SQLite relational store
-│   │   ├── server.rs          # HTTP server, CORS, rate-limiting middleware
-│   │   ├── http.rs            # HTTP client (GET, POST)
-│   │   ├── log.rs             # Structured and colorized logging
-│   │   ├── regex.rs           # Industrial regular expression engine
-│   │   ├── os.rs              # Operating system & process system APIs
+│   ├── stdlib/
+│   │   ├── math.rs
+│   │   ├── json.rs
+│   │   ├── fs.rs
+│   │   ├── time.rs
+│   │   ├── env.rs
+│   │   ├── random.rs
+│   │   ├── text.rs
+│   │   ├── crypto.rs
+│   │   ├── jwt.rs
+│   │   ├── cache.rs
+│   │   ├── collections.rs
+│   │   ├── validation.rs
+│   │   ├── db.rs
+│   │   ├── server.rs
+│   │   ├── http.rs
+│   │   ├── log.rs
+│   │   ├── regex.rs
+│   │   ├── os.rs
 │   │   └── mod.rs
-│   ├── package_manager/       # Project init, package install/remove
+│   ├── package_manager/
 │   │   └── mod.rs
-│   └── cli/                   # CLI command handlers, REPL, test runner
+│   └── cli/
 │       └── mod.rs
 ├── examples/
-│   ├── 01_hello.lys           # Basics & arithmetic
-│   ├── 02_control_flow.lys    # Conditionals & loops
-│   ├── 03_functions_and_closures.lys # First-class functions & stateful closures
-│   ├── 04_collections.lys     # Lists & dictionaries
-│   ├── 05_error_handling.lys  # Try, catch, finally, raise
-│   ├── 06_filesystem.lys      # File read/write/delete
-│   ├── 07_http_requests.lys   # Client HTTP requests
-│   ├── 08_modules_and_stdlib.lys # Standard library modules
-│   ├── 09_task_manager.lys    # Task persistence application
-│   ├── 10_backend_api_server.lys # Complete Production REST API Server
-│   ├── 11_production_jwt_cache_api.lys # Enterprise JWT, Cache, Rate-Limiting API
-│   ├── 12_simple_english_programming.lys # Pure English syntax showcase
-│   └── 13_oop_and_industrial.lys # Object-oriented programming & systems API
+│   ├── 01_hello.lys
+│   ├── 02_control_flow.lys
+│   ├── 03_functions_and_closures.lys
+│   ├── 04_collections.lys
+│   ├── 05_error_handling.lys
+│   ├── 06_filesystem.lys
+│   ├── 07_http_requests.lys
+│   ├── 08_modules_and_stdlib.lys
+│   ├── 09_task_manager.lys
+│   ├── 10_backend_api_server.lys
+│   ├── 11_production_jwt_cache_api.lys
+│   ├── 12_simple_english_programming.lys
+│   └── 13_oop_and_industrial.lys
 ├── tests/
-│   ├── native_rust_tests.rs   # Rust integration test suite
-│   ├── test_basics.lys        # Core language tests
-│   ├── test_control_flow.lys  # Control flow tests
-│   ├── test_functions.lys     # Closures & recursion tests
-│   ├── test_collections.lys   # Lists & objects tests
-│   ├── test_errors.lys        # Exception handling tests
-│   ├── test_stdlib.lys        # Standard library tests
-│   ├── test_db.lys            # Database CRUD & query tests
-│   ├── test_backend_security.lys # Crypto & validation tests
-│   ├── test_jwt_cache_collections.lys # Advanced backend feature tests
-│   ├── test_simple_english.lys # Natural English grammar tests
-│   └── test_oop_and_industrial.lys # OOP, regex & type reflection tests
-├── SPEC.md                    # Formal EBNF Grammar & Backend Specification
-├── DOCS.md                    # Complete Reference Manual
-└── README.md                  # This file
+│   ├── native_rust_tests.rs
+│   ├── test_basics.lys
+│   ├── test_control_flow.lys
+│   ├── test_functions.lys
+│   ├── test_collections.lys
+│   ├── test_errors.lys
+│   ├── test_stdlib.lys
+│   ├── test_db.lys
+│   ├── test_backend_security.lys
+│   ├── test_jwt_cache_collections.lys
+│   ├── test_simple_english.lys
+│   └── test_oop_and_industrial.lys
+├── SPEC.md
+├── DOCS.md
+└── README.md
 ```
 
 ---
