@@ -10,6 +10,16 @@ use std::path::Path;
 use std::time::Instant;
 
 pub fn run_cli(args: Vec<String>) -> Result<(), i32> {
+    if let Some(source) = check_embedded_executable() {
+        let script_args = if args.len() > 1 {
+            args[1..].to_vec()
+        } else {
+            Vec::new()
+        };
+        let exe_name = args.get(0).cloned().unwrap_or_else(|| "<standalone>".to_string());
+        return execute_source(&source, &exe_name, script_args);
+    }
+
     if args.len() <= 1 {
         print_help();
         return Ok(());
@@ -44,6 +54,22 @@ pub fn run_cli(args: Vec<String>) -> Result<(), i32> {
             let script_args: Vec<String> = args[3..].to_vec();
             execute_file(filename, script_args)
         }
+        "compile" => {
+            if args.len() < 3 {
+                eprintln!("{}", "Error: Missing filename to compile".red());
+                eprintln!("Usage: lyslyn compile <file.lys> [-o binary_name]");
+                return Err(1);
+            }
+            let filename = &args[2];
+            let default_out = filename.trim_end_matches(".lys").to_string();
+            let out_path = args
+                .iter()
+                .position(|a| a == "-o")
+                .and_then(|idx| args.get(idx + 1))
+                .map(|s| s.as_str())
+                .unwrap_or(&default_out);
+            compile_standalone(filename, out_path)
+        }
         "check" => {
             if args.len() < 3 {
                 eprintln!("{}", "Error: Missing filename to check".red());
@@ -55,10 +81,21 @@ pub fn run_cli(args: Vec<String>) -> Result<(), i32> {
         "build" => {
             if args.len() < 3 {
                 eprintln!("{}", "Error: Missing filename to build".red());
-                eprintln!("Usage: lyslyn build <file.lys> [-o output.lysc]");
+                eprintln!("Usage: lyslyn build <file.lys> [-o output.lysc] [--standalone]");
                 return Err(1);
             }
-            build_file(&args[2], args.get(4).map(|s| s.as_str()))
+            if args.contains(&"--standalone".to_string()) {
+                let default_out = args[2].trim_end_matches(".lys").to_string();
+                let out_path = args
+                    .iter()
+                    .position(|a| a == "-o")
+                    .and_then(|idx| args.get(idx + 1))
+                    .map(|s| s.as_str())
+                    .unwrap_or(&default_out);
+                compile_standalone(&args[2], out_path)
+            } else {
+                build_file(&args[2], args.get(4).map(|s| s.as_str()))
+            }
         }
         "disasm" => {
             if args.len() < 3 {
@@ -482,6 +519,118 @@ pub fn run_test_suite() -> Result<(), i32> {
     }
 }
 
+pub fn check_embedded_executable() -> Option<String> {
+    let exe_path = std::env::current_exe().ok()?;
+    let data = fs::read(&exe_path).ok()?;
+    let magic = b"LYSLYN_EMBEDDED_V1\n";
+    if data.len() < magic.len() + 8 {
+        return None;
+    }
+    let footer_start = data.len() - magic.len() - 8;
+    if &data[data.len() - magic.len()..] == magic {
+        let len_bytes: [u8; 8] = data[footer_start..footer_start + 8].try_into().ok()?;
+        let source_len = u64::from_be_bytes(len_bytes) as usize;
+        if footer_start >= source_len {
+            let source_start = footer_start - source_len;
+            let source_bytes = &data[source_start..footer_start];
+            return String::from_utf8(source_bytes.to_vec()).ok();
+        }
+    }
+    None
+}
+
+fn get_base_executable() -> Result<Vec<u8>, String> {
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Ok(bytes) = fs::read(&exe_path) {
+            let magic = b"LYSLYN_EMBEDDED_V1\n";
+            if bytes.len() >= magic.len() + 8 && &bytes[bytes.len() - magic.len()..] == magic {
+                let footer_start = bytes.len() - magic.len() - 8;
+                let len_bytes: [u8; 8] = bytes[footer_start..footer_start + 8]
+                    .try_into()
+                    .unwrap_or([0; 8]);
+                let source_len = u64::from_be_bytes(len_bytes) as usize;
+                if footer_start >= source_len {
+                    return Ok(bytes[..footer_start - source_len].to_vec());
+                }
+            }
+            return Ok(bytes);
+        }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        let candidate = Path::new(&home).join(".local/bin/lyslyn");
+        if let Ok(bytes) = fs::read(&candidate) {
+            return Ok(bytes);
+        }
+        let candidate2 = Path::new(&home).join(".cargo_target/lyslyn/release/lyslyn");
+        if let Ok(bytes) = fs::read(&candidate2) {
+            return Ok(bytes);
+        }
+    }
+    Err("Could not locate lyslyn base executable".to_string())
+}
+
+pub fn compile_standalone(filename: &str, out_path: &str) -> Result<(), i32> {
+    let source = fs::read_to_string(filename).map_err(|e| {
+        eprintln!("{}: Cannot read file '{}': {}", "Error".red(), filename, e);
+        1
+    })?;
+
+    let mut scanner = Scanner::new(&source, filename);
+    let tokens = scanner.scan_tokens().map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    let mut parser = Parser::new(tokens, filename, &source);
+    let program = parser.parse().map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    let mut compiler = Compiler::new(filename, &source);
+    let _ = compiler.compile(&program).map_err(|e| {
+        eprintln!("{}", e.format_diagnostic().red());
+        1
+    })?;
+
+    let mut binary_bytes = get_base_executable().map_err(|e| {
+        eprintln!("{}: {}", "Error".red(), e);
+        1
+    })?;
+
+    let source_bytes = source.as_bytes();
+    let source_len = source_bytes.len() as u64;
+    let len_bytes = source_len.to_be_bytes();
+    let magic = b"LYSLYN_EMBEDDED_V1\n";
+
+    binary_bytes.extend_from_slice(source_bytes);
+    binary_bytes.extend_from_slice(&len_bytes);
+    binary_bytes.extend_from_slice(magic);
+
+    fs::write(out_path, &binary_bytes).map_err(|e| {
+        eprintln!("{}: Cannot write output binary '{}': {}", "Error".red(), out_path, e);
+        1
+    })?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(metadata) = fs::metadata(out_path) {
+            let mut perms = metadata.permissions();
+            perms.set_mode(0o755);
+            let _ = fs::set_permissions(out_path, perms);
+        }
+    }
+
+    println!(
+        "{} Successfully compiled standalone native executable '{}' ({} bytes)",
+        "✓".green().bold(),
+        out_path,
+        binary_bytes.len()
+    );
+    Ok(())
+}
+
 fn print_help() {
     println!(
         "{} - The Simple-English Systems Programming Language\n",
@@ -490,6 +639,7 @@ fn print_help() {
     println!("Usage:");
     println!("  lyslyn <file.lys> [args...]       Execute a Lyslyn script directly");
     println!("  lyslyn run <file.lys> [args...]   Execute a Lyslyn script");
+    println!("  lyslyn compile <file.lys> [-o out] Compile to standalone native executable");
     println!("  lyslyn -c '<code>'                Execute inline code string");
     println!("  lyslyn check <file.lys>           Parse and statically check a script");
     println!("  lyslyn build <file.lys>           Compile to binary bytecode (.lysc)");
