@@ -1,0 +1,147 @@
+name: CI / CD
+
+on:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            os: ubuntu-latest
+            binary_path: target/release/lyslyn
+            artifact_name: lyslyn-linux-x64
+          - name: macOS
+            os: macos-latest
+            binary_path: target/release/lyslyn
+            artifact_name: lyslyn-macos
+          - name: Windows x64
+            os: windows-latest
+            binary_path: target/release/lyslyn.exe
+            artifact_name: lyslyn-windows-x64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Cargo tests
+        run: cargo test --locked --verbose
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Run Lyslyn native test suite
+        run: cargo run --release -- test
+
+      - name: Run Lyslyn examples
+        shell: bash
+        run: |
+          for f in examples/*.lys; do
+            echo "Running $f..."
+            cargo run --release -- "$f"
+          done
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.binary_path }}
+          if-no-files-found: error
+
+  cross-compile-android:
+    name: Android ARM64 (Cross-compile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: aarch64-linux-android
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26d
+          link-to-sdk: true
+
+      - name: Build Android ARM64 binary
+        env:
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+          CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+          AR_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+        run: cargo build --release --locked --target aarch64-linux-android
+
+      - name: Upload Android ARM64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lyslyn-android-arm64
+          path: target/aarch64-linux-android/release/lyslyn
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-and-test, cross-compile-android]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package release archives
+        run: |
+          mkdir -p dist
+          cp artifacts/lyslyn-linux-x64/lyslyn dist/lyslyn-linux-x64
+          chmod +x dist/lyslyn-linux-x64
+          tar -czvf dist/lyslyn-linux-x64.tar.gz -C dist lyslyn-linux-x64
+          cp artifacts/lyslyn-macos/lyslyn dist/lyslyn-macos
+          chmod +x dist/lyslyn-macos
+          tar -czvf dist/lyslyn-macos.tar.gz -C dist lyslyn-macos
+          cp artifacts/lyslyn-windows-x64/lyslyn.exe dist/lyslyn-windows-x64.exe
+          zip -j dist/lyslyn-windows-x64.zip dist/lyslyn-windows-x64.exe
+          cp artifacts/lyslyn-android-arm64/lyslyn dist/lyslyn-android-arm64
+          chmod +x dist/lyslyn-android-arm64
+          tar -czvf dist/lyslyn-android-arm64.tar.gz -C dist lyslyn-android-arm64
+
+          cd dist
+          sha256sum *.tar.gz *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          generate_release_notes: true
