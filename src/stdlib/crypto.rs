@@ -54,7 +54,10 @@ pub fn create_crypto_module() -> Value {
         ),
     );
 
-    exports.insert("token".to_string(), exports.get("token_hex").unwrap().clone());
+    exports.insert(
+        "token".to_string(),
+        exports.get("token_hex").unwrap().clone(),
+    );
 
     exports.insert(
         "uuid".to_string(),
@@ -119,7 +122,10 @@ pub fn create_crypto_module() -> Value {
                             Ok(Value::Bool(false))
                         }
                     } else {
-                        Err("Expected string password and hash to crypto.verify_password".to_string())
+                        Err(
+                            "Expected string password and hash to crypto.verify_password"
+                                .to_string(),
+                        )
                     }
                 } else {
                     Err("Expected 2 arguments to crypto.verify_password".to_string())

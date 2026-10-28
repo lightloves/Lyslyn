@@ -17,7 +17,8 @@ pub fn load_regex_module() -> Value {
                 }
                 let pat_str = args[0].to_string();
                 let text = args[1].to_string();
-                let re = Regex::new(&pat_str).map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
+                let re = Regex::new(&pat_str)
+                    .map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
                 Ok(Value::Bool(re.is_match(&text)))
             }),
         ),
@@ -33,7 +34,8 @@ pub fn load_regex_module() -> Value {
                 }
                 let pat_str = args[0].to_string();
                 let text = args[1].to_string();
-                let re = Regex::new(&pat_str).map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
+                let re = Regex::new(&pat_str)
+                    .map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
                 if let Some(m) = re.find(&text) {
                     Ok(Value::Str(m.as_str().to_string()))
                 } else {
@@ -53,7 +55,8 @@ pub fn load_regex_module() -> Value {
                 }
                 let pat_str = args[0].to_string();
                 let text = args[1].to_string();
-                let re = Regex::new(&pat_str).map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
+                let re = Regex::new(&pat_str)
+                    .map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
                 let matches: Vec<Value> = re
                     .find_iter(&text)
                     .map(|m| Value::Str(m.as_str().to_string()))
@@ -69,12 +72,16 @@ pub fn load_regex_module() -> Value {
             "replace".to_string(),
             Rc::new(|args| {
                 if args.len() < 3 {
-                    return Err("Expected 3 arguments to regex.replace(pattern, replacement, text)".to_string());
+                    return Err(
+                        "Expected 3 arguments to regex.replace(pattern, replacement, text)"
+                            .to_string(),
+                    );
                 }
                 let pat_str = args[0].to_string();
                 let rep = args[1].to_string();
                 let text = args[2].to_string();
-                let re = Regex::new(&pat_str).map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
+                let re = Regex::new(&pat_str)
+                    .map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
                 let result = re.replace_all(&text, rep.as_str()).to_string();
                 Ok(Value::Str(result))
             }),
@@ -91,11 +98,10 @@ pub fn load_regex_module() -> Value {
                 }
                 let pat_str = args[0].to_string();
                 let text = args[1].to_string();
-                let re = Regex::new(&pat_str).map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
-                let parts: Vec<Value> = re
-                    .split(&text)
-                    .map(|s| Value::Str(s.to_string()))
-                    .collect();
+                let re = Regex::new(&pat_str)
+                    .map_err(|e| format!("Invalid regex '{}': {}", pat_str, e))?;
+                let parts: Vec<Value> =
+                    re.split(&text).map(|s| Value::Str(s.to_string())).collect();
                 Ok(Value::List(Rc::new(RefCell::new(parts))))
             }),
         ),

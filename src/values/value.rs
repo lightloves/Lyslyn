@@ -405,11 +405,8 @@ impl Value {
                         Some(Value::NativeFunction(
                             "values".to_string(),
                             Rc::new(move |_| {
-                                let vals_list: Vec<Value> = m_clone
-                                    .borrow()
-                                    .values()
-                                    .cloned()
-                                    .collect();
+                                let vals_list: Vec<Value> =
+                                    m_clone.borrow().values().cloned().collect();
                                 Ok(Value::List(Rc::new(RefCell::new(vals_list))))
                             }),
                         ))
@@ -454,7 +451,10 @@ impl Value {
                 inst.borrow_mut().fields.insert(prop.to_string(), val);
                 Ok(())
             }
-            _ => Err(format!("Cannot set property on type '{}'", self.type_name())),
+            _ => Err(format!(
+                "Cannot set property on type '{}'",
+                self.type_name()
+            )),
         }
     }
 
@@ -465,7 +465,10 @@ impl Value {
                 let len = borrowed.len() as i64;
                 let actual_idx = if *i < 0 { len + *i } else { *i };
                 if actual_idx < 0 || actual_idx >= len {
-                    Err(format!("Index {} out of bounds for list of length {}", i, len))
+                    Err(format!(
+                        "Index {} out of bounds for list of length {}",
+                        i, len
+                    ))
                 } else {
                     Ok(borrowed[actual_idx as usize].clone())
                 }
@@ -475,7 +478,10 @@ impl Value {
                 let len = chars.len() as i64;
                 let actual_idx = if *i < 0 { len + *i } else { *i };
                 if actual_idx < 0 || actual_idx >= len {
-                    Err(format!("Index {} out of bounds for string of length {}", i, len))
+                    Err(format!(
+                        "Index {} out of bounds for string of length {}",
+                        i, len
+                    ))
                 } else {
                     Ok(Value::Str(chars[actual_idx as usize].to_string()))
                 }
@@ -499,7 +505,10 @@ impl Value {
                 let len = borrowed.len() as i64;
                 let actual_idx = if *i < 0 { len + *i } else { *i };
                 if actual_idx < 0 || actual_idx >= len {
-                    Err(format!("Index {} out of bounds for list of length {}", i, len))
+                    Err(format!(
+                        "Index {} out of bounds for list of length {}",
+                        i, len
+                    ))
                 } else {
                     borrowed[actual_idx as usize] = val;
                     Ok(())
@@ -585,8 +594,15 @@ impl fmt::Display for Value {
             Value::NativeFunction(name, _) => write!(f, "<native function {}>", name),
             Value::Module(m) => write!(f, "<module '{}'>", m.name),
             Value::Class(cls) => write!(f, "<class {}>", cls.borrow().name),
-            Value::Instance(inst) => write!(f, "<instance of {}>", inst.borrow().class.borrow().name),
-            Value::BoundMethod(inst, m) => write!(f, "<bound method {}.{}>", inst.borrow().class.borrow().name, m.name),
+            Value::Instance(inst) => {
+                write!(f, "<instance of {}>", inst.borrow().class.borrow().name)
+            }
+            Value::BoundMethod(inst, m) => write!(
+                f,
+                "<bound method {}.{}>",
+                inst.borrow().class.borrow().name,
+                m.name
+            ),
         }
     }
 }

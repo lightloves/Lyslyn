@@ -84,15 +84,19 @@ impl Scanner {
             }
         }
 
-        let is_empty_or_comment = if idx >= self.source.len() || self.source[idx] == '\n' || self.source[idx] == '\r' {
-            true
-        } else if self.source[idx] == '#' {
-            true
-        } else if idx + 1 < self.source.len() && self.source[idx] == '/' && self.source[idx + 1] == '/' {
-            true
-        } else {
-            false
-        };
+        let is_empty_or_comment =
+            if idx >= self.source.len() || self.source[idx] == '\n' || self.source[idx] == '\r' {
+                true
+            } else if self.source[idx] == '#' {
+                true
+            } else if idx + 1 < self.source.len()
+                && self.source[idx] == '/'
+                && self.source[idx + 1] == '/'
+            {
+                true
+            } else {
+                false
+            };
 
         if is_empty_or_comment {
             while self.current < idx {
@@ -115,7 +119,9 @@ impl Scanner {
                 let span = Span::new(self.line, 1, indent_spaces - current_indent);
                 self.tokens.push(Token::new(TokenType::Indent, "", span));
             } else if indent_spaces < current_indent {
-                while self.indent_stack.len() > 1 && indent_spaces < *self.indent_stack.last().unwrap() {
+                while self.indent_stack.len() > 1
+                    && indent_spaces < *self.indent_stack.last().unwrap()
+                {
                     self.indent_stack.pop();
                     let span = Span::new(self.line, 1, 0);
                     self.tokens.push(Token::new(TokenType::Dedent, "", span));
@@ -148,7 +154,9 @@ impl Scanner {
             '\n' => {
                 if self.bracket_depth == 0 {
                     if let Some(last) = self.tokens.last() {
-                        if last.token_type != TokenType::Newline && last.token_type != TokenType::Indent {
+                        if last.token_type != TokenType::Newline
+                            && last.token_type != TokenType::Indent
+                        {
                             let span = Span::new(self.line - 1, self.column, 1);
                             self.tokens.push(Token::new(TokenType::Newline, "\n", span));
                         }
@@ -271,7 +279,9 @@ impl Scanner {
         while !self.is_at_end() {
             if is_triple {
                 if self.peek() == quote && self.peek_next() == quote {
-                    if self.current + 2 < self.source.len() && self.source[self.current + 2] == quote {
+                    if self.current + 2 < self.source.len()
+                        && self.source[self.current + 2] == quote
+                    {
                         self.advance();
                         self.advance();
                         self.advance();
@@ -319,11 +329,15 @@ impl Scanner {
                 self.advance();
             }
             let lexeme: String = self.source[self.start..self.current].iter().collect();
-            let val: f64 = lexeme.parse().map_err(|_| self.error("Invalid float literal"))?;
+            let val: f64 = lexeme
+                .parse()
+                .map_err(|_| self.error("Invalid float literal"))?;
             self.add_token(TokenType::Float(val));
         } else {
             let lexeme: String = self.source[self.start..self.current].iter().collect();
-            let val: i64 = lexeme.parse().map_err(|_| self.error("Invalid integer literal"))?;
+            let val: i64 = lexeme
+                .parse()
+                .map_err(|_| self.error("Invalid integer literal"))?;
             self.add_token(TokenType::Int(val));
         }
 

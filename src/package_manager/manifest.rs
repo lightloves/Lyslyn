@@ -49,8 +49,9 @@ impl Manifest {
 
     pub fn save_to_dir(&self, dir: &Path) -> Result<(), String> {
         let manifest_path = dir.join("lyslyn.toml");
-        let content =
-            toml::to_string_pretty(self).map_err(|e| format!("Failed to serialize manifest: {}", e))?;
-        fs::write(&manifest_path, content).map_err(|e| format!("Failed to write lyslyn.toml: {}", e))
+        let content = toml::to_string_pretty(self)
+            .map_err(|e| format!("Failed to serialize manifest: {}", e))?;
+        fs::write(&manifest_path, content)
+            .map_err(|e| format!("Failed to write lyslyn.toml: {}", e))
     }
 }

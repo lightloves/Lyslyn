@@ -31,8 +31,16 @@ fn base64_encode(data: &[u8]) -> String {
     let mut i = 0;
     while i < data.len() {
         let b0 = data[i] as u32;
-        let b1 = if i + 1 < data.len() { data[i + 1] as u32 } else { 0 };
-        let b2 = if i + 2 < data.len() { data[i + 2] as u32 } else { 0 };
+        let b1 = if i + 1 < data.len() {
+            data[i + 1] as u32
+        } else {
+            0
+        };
+        let b2 = if i + 2 < data.len() {
+            data[i + 2] as u32
+        } else {
+            0
+        };
 
         let triple = (b0 << 16) | (b1 << 8) | b2;
 
@@ -166,7 +174,8 @@ pub fn create_jwt_module() -> Value {
                     };
 
                     if !payload_json.contains_key("iat") {
-                        payload_json.insert("iat".to_string(), serde_json::Value::Number(now.into()));
+                        payload_json
+                            .insert("iat".to_string(), serde_json::Value::Number(now.into()));
                     }
                     if let Some(exp_sec) = expires_in {
                         if exp_sec > 0 {
@@ -178,7 +187,8 @@ pub fn create_jwt_module() -> Value {
                     }
 
                     let header_json = serde_json::json!({"alg": "HS256", "typ": "JWT"});
-                    let header_b64 = b64url_encode(serde_json::to_string(&header_json).unwrap().as_bytes());
+                    let header_b64 =
+                        b64url_encode(serde_json::to_string(&header_json).unwrap().as_bytes());
                     let payload_b64 = b64url_encode(
                         serde_json::to_string(&serde_json::Value::Object(payload_json))
                             .unwrap()

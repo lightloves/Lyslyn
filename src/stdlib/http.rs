@@ -76,7 +76,10 @@ pub fn http_request_impl(
 
     let mut resp_map = IndexMap::new();
     resp_map.insert("status".to_string(), Value::Int(status_code));
-    resp_map.insert("ok".to_string(), Value::Bool(status_code >= 200 && status_code < 300));
+    resp_map.insert(
+        "ok".to_string(),
+        Value::Bool(status_code >= 200 && status_code < 300),
+    );
     resp_map.insert("body".to_string(), Value::Str(body_str.clone()));
     resp_map.insert("url".to_string(), Value::Str(url.to_string()));
 
@@ -135,7 +138,13 @@ pub fn create_http_module() -> Value {
             "get".to_string(),
             Rc::new(|args| {
                 if let Some(url) = args.first() {
-                    Ok(http_request_impl("GET", &url.to_string(), Value::Nil, Value::Nil, Value::Nil))
+                    Ok(http_request_impl(
+                        "GET",
+                        &url.to_string(),
+                        Value::Nil,
+                        Value::Nil,
+                        Value::Nil,
+                    ))
                 } else {
                     Err("Expected url to http.get".to_string())
                 }
@@ -150,7 +159,13 @@ pub fn create_http_module() -> Value {
             Rc::new(|args| {
                 if let Some(url) = args.first() {
                     let data = args.get(1).cloned().unwrap_or(Value::Nil);
-                    Ok(http_request_impl("POST", &url.to_string(), Value::Nil, data, Value::Nil))
+                    Ok(http_request_impl(
+                        "POST",
+                        &url.to_string(),
+                        Value::Nil,
+                        data,
+                        Value::Nil,
+                    ))
                 } else {
                     Err("Expected url to http.post".to_string())
                 }

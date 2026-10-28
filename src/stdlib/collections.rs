@@ -85,7 +85,10 @@ pub fn create_collections_module() -> Value {
                         let b2 = l2.borrow();
                         let mut zipped = Vec::new();
                         for (a, b) in b1.iter().zip(b2.iter()) {
-                            zipped.push(Value::List(Rc::new(RefCell::new(vec![a.clone(), b.clone()]))));
+                            zipped.push(Value::List(Rc::new(RefCell::new(vec![
+                                a.clone(),
+                                b.clone(),
+                            ]))));
                         }
                         Ok(Value::List(Rc::new(RefCell::new(zipped))))
                     } else {

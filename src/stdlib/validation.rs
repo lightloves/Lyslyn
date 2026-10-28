@@ -12,7 +12,9 @@ pub fn create_validation_module() -> Value {
             "validate".to_string(),
             Rc::new(|args| {
                 if args.len() < 2 {
-                    return Err("Expected 2 arguments to validation.validate(data, schema)".to_string());
+                    return Err(
+                        "Expected 2 arguments to validation.validate(data, schema)".to_string()
+                    );
                 }
 
                 let data_map = match &args[0] {
@@ -27,14 +29,19 @@ pub fn create_validation_module() -> Value {
                             Value::Str("Expected object for validation".to_string()),
                         );
                         let errs = vec![Value::Map(Rc::new(RefCell::new(err_entry)))];
-                        res.insert("errors".to_string(), Value::List(Rc::new(RefCell::new(errs))));
+                        res.insert(
+                            "errors".to_string(),
+                            Value::List(Rc::new(RefCell::new(errs))),
+                        );
                         return Ok(Value::Map(Rc::new(RefCell::new(res))));
                     }
                 };
 
                 let schema_map = match &args[1] {
                     Value::Map(m) => m.borrow().clone(),
-                    _ => return Err("Expected schema map as second argument to validate".to_string()),
+                    _ => {
+                        return Err("Expected schema map as second argument to validate".to_string())
+                    }
                 };
 
                 let mut errors = Vec::new();
@@ -65,7 +72,9 @@ pub fn create_validation_module() -> Value {
 
                     let val = val_opt.unwrap();
 
-                    if rules.iter().any(|r| r.eq_ignore_ascii_case("string")) && !matches!(val, Value::Str(_)) {
+                    if rules.iter().any(|r| r.eq_ignore_ascii_case("string"))
+                        && !matches!(val, Value::Str(_))
+                    {
                         let mut err = IndexMap::new();
                         err.insert("field".to_string(), Value::Str(field.clone()));
                         err.insert(
@@ -99,7 +108,10 @@ pub fn create_validation_module() -> Value {
                             err.insert("field".to_string(), Value::Str(field.clone()));
                             err.insert(
                                 "issue".to_string(),
-                                Value::Str(format!("Field '{}' must be a valid email address", field)),
+                                Value::Str(format!(
+                                    "Field '{}' must be a valid email address",
+                                    field
+                                )),
                             );
                             errors.push(Value::Map(Rc::new(RefCell::new(err))));
                             continue;
@@ -115,7 +127,10 @@ pub fn create_validation_module() -> Value {
                                         err.insert("field".to_string(), Value::Str(field.clone()));
                                         err.insert(
                                             "issue".to_string(),
-                                            Value::Str(format!("Field '{}' must be at least {}", field, min_num)),
+                                            Value::Str(format!(
+                                                "Field '{}' must be at least {}",
+                                                field, min_num
+                                            )),
                                         );
                                         errors.push(Value::Map(Rc::new(RefCell::new(err))));
                                     }
@@ -124,7 +139,10 @@ pub fn create_validation_module() -> Value {
                                         err.insert("field".to_string(), Value::Str(field.clone()));
                                         err.insert(
                                             "issue".to_string(),
-                                            Value::Str(format!("Field '{}' must be at least {}", field, min_num)),
+                                            Value::Str(format!(
+                                                "Field '{}' must be at least {}",
+                                                field, min_num
+                                            )),
                                         );
                                         errors.push(Value::Map(Rc::new(RefCell::new(err))));
                                     }
@@ -162,7 +180,10 @@ pub fn create_validation_module() -> Value {
                 let is_valid = errors.is_empty();
                 let mut result = IndexMap::new();
                 result.insert("valid".to_string(), Value::Bool(is_valid));
-                result.insert("errors".to_string(), Value::List(Rc::new(RefCell::new(errors))));
+                result.insert(
+                    "errors".to_string(),
+                    Value::List(Rc::new(RefCell::new(errors))),
+                );
 
                 Ok(Value::Map(Rc::new(RefCell::new(result))))
             }),

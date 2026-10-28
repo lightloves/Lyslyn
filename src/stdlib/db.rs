@@ -265,7 +265,8 @@ pub fn create_db_module() -> Value {
                     if let Some(pos) = from_pos {
                         if pos + 1 < words.len() {
                             let table_name = words[pos + 1].trim_matches(';').to_string();
-                            let where_pos = words.iter().position(|w| w.eq_ignore_ascii_case("WHERE"));
+                            let where_pos =
+                                words.iter().position(|w| w.eq_ignore_ascii_case("WHERE"));
 
                             with_db(|state| {
                                 if let Some(rows) = state.tables.get(&table_name) {

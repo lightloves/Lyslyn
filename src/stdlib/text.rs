@@ -84,7 +84,8 @@ pub fn create_text_module() -> Value {
                     } else {
                         String::new()
                     };
-                    let str_items: Vec<String> = items.borrow().iter().map(|v| v.to_string()).collect();
+                    let str_items: Vec<String> =
+                        items.borrow().iter().map(|v| v.to_string()).collect();
                     Ok(Value::Str(str_items.join(&sep)))
                 } else {
                     Err("Expected list as first argument to text.join".to_string())
@@ -276,11 +277,16 @@ pub fn create_text_module() -> Value {
                     if cur_len >= target_len {
                         Ok(Value::Str(s))
                     } else {
-                        let pad: String = std::iter::repeat(pad_char).take(target_len - cur_len).collect();
+                        let pad: String = std::iter::repeat(pad_char)
+                            .take(target_len - cur_len)
+                            .collect();
                         Ok(Value::Str(format!("{}{}", pad, s)))
                     }
                 } else {
-                    Err("Expected at least 2 arguments to text.pad_start(s, len, [pad])".to_string())
+                    Err(
+                        "Expected at least 2 arguments to text.pad_start(s, len, [pad])"
+                            .to_string(),
+                    )
                 }
             }),
         ),
@@ -307,7 +313,9 @@ pub fn create_text_module() -> Value {
                     if cur_len >= target_len {
                         Ok(Value::Str(s))
                     } else {
-                        let pad: String = std::iter::repeat(pad_char).take(target_len - cur_len).collect();
+                        let pad: String = std::iter::repeat(pad_char)
+                            .take(target_len - cur_len)
+                            .collect();
                         Ok(Value::Str(format!("{}{}", s, pad)))
                     }
                 } else {

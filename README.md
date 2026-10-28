@@ -1,6 +1,6 @@
 # Lyslyn — The Industrial-Grade Backend Language
 
-[![Version](https://img.shields.io/badge/version-2.0.0--industrial-blue.svg)](SPEC.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](SPEC.md)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -8,28 +8,28 @@
 
 ---
 
-## ⚡ Industrial Capabilities
+## Industrial Capabilities
 
-- 🏛️ **Java & Python Level OOP**: Full classes, constructors (`To initialize with ...:`), instance methods, inheritance (`inheriting from ...`), superclass delegation (`Call parent with ...`), and bound methods.
-- 🔍 **Dynamic Type Inspection & Reflection**: `type(x)` reflection, `is an instance of <Class>`, and English type predicates (`is a string`, `is an integer`, `is a number`, `is a list`, `is a map`, `is a function`).
-- 🎯 **Enterprise Regular Expressions**: Native `regex` engine (`regex.is_match`, `regex.find`, `regex.find_all`, `regex.replace`, `regex.split`).
-- 💻 **Operating System & Process System APIs**: Native `os` module (`os.platform`, `os.arch`, `os.cwd`, `os.args`, `os.exit`, `os.exec`).
-- 🚀 **Bytecode Compiler & Stack Virtual Machine**: Fast AST-to-bytecode compilation, binary serialization (`.lysc`), and independent Rust execution engine.
-- 🌐 **Native HTTP Server & Routing**: First-class `Serve HTTP on port ...` syntax with pattern-matching path parameters (`/api/users/:id`).
-- 🛡️ **JWT Authentication & Security**: RFC 7519 JSON Web Tokens (`jwt.sign`, `jwt.verify`) and native `server.jwt_auth()` middleware.
-- ⏱️ **In-Memory TTL Cache Engine**: Fast in-process key-value store with millisecond-precision TTL eviction (`cache.set`, `cache.get_or_set`).
-- 🛑 **Sliding-Window Rate Limiting**: Built-in IP-based rate limiting middleware (`server.rate_limit`) with HTTP 429 backoff.
-- 🗄️ **Zero-Dependency Database Engine**: Built-in SQLite and ORM layer (`db.insert`, `db.find`, `db.query`) with WAL concurrency.
-- 🔍 **Declarative Request Validation**: `Validate body with { ... }` automatically inspects payloads and responds with formatted HTTP 400 errors.
-- 🔒 **Enterprise-Grade Cryptography**: Native PBKDF2 password hashing, constant-time verification, UUIDs, HMAC, and tokens.
-- 🧩 **Functional Collections Pipeline**: High-order algorithms (`Map`, `Filter`, `Reduce`, `Sort`, `Unique`, `Chunk`, `Zip`).
-- ⚙️ **Config & Structured Logging**: Automatic `.env` file loader (`env.require`, `env.get_int`) and colorized/JSON logger.
-- 📦 **Deterministic Package Manager**: Project initialization and dependency management (`lys init`, `lys install`, `lys remove`).
-- 🛠️ **Full Developer Toolchain**: CLI with `run`, `check`, `build`, `test`, `init`, `install`, `remove`, and interactive `repl`.
+- **Java & Python Level OOP**: Full classes, constructors (`To initialize with ...:`), instance methods, inheritance (`inheriting from ...`), superclass delegation (`Call parent with ...`), and bound methods.
+- **Dynamic Type Inspection & Reflection**: `type(x)` reflection, `is an instance of <Class>`, and English type predicates (`is a string`, `is an integer`, `is a number`, `is a list`, `is a map`, `is a function`).
+- **Enterprise Regular Expressions**: Native `regex` engine (`regex.is_match`, `regex.find`, `regex.find_all`, `regex.replace`, `regex.split`).
+- **Operating System & Process System APIs**: Native `os` module (`os.platform`, `os.arch`, `os.cwd`, `os.args`, `os.exit`, `os.exec`).
+- **Bytecode Compiler & Stack Virtual Machine**: Fast AST-to-bytecode compilation, binary serialization (`.lysc`), and independent Rust execution engine.
+- **Native HTTP Server & Routing**: First-class `Serve HTTP on port ...` syntax with pattern-matching path parameters (`/api/users/:id`).
+- **JWT Authentication & Security**: RFC 7519 JSON Web Tokens (`jwt.sign`, `jwt.verify`) and native `server.jwt_auth()` middleware.
+- **In-Memory TTL Cache Engine**: Fast in-process key-value store with millisecond-precision TTL eviction (`cache.set`, `cache.get_or_set`).
+- **Sliding-Window Rate Limiting**: Built-in IP-based rate limiting middleware (`server.rate_limit`) with HTTP 429 backoff.
+- **Zero-Dependency Database Engine**: Built-in SQLite and ORM layer (`db.insert`, `db.find`, `db.query`) with WAL concurrency.
+- **Declarative Request Validation**: `Validate body with { ... }` automatically inspects payloads and responds with formatted HTTP 400 errors.
+- **Enterprise-Grade Cryptography**: Native PBKDF2 password hashing, constant-time verification, UUIDs, HMAC, and tokens.
+- **Functional Collections Pipeline**: High-order algorithms (`Map`, `Filter`, `Reduce`, `Sort`, `Unique`, `Chunk`, `Zip`).
+- **Config & Structured Logging**: Automatic `.env` file loader (`env.require`, `env.get_int`) and colorized/JSON logger.
+- **Deterministic Package Manager**: Project initialization and dependency management (`lys init`, `lys install`, `lys remove`).
+- **Full Developer Toolchain**: CLI with `run`, `check`, `build`, `test`, `init`, `install`, `remove`, and interactive `repl`.
 
 ---
 
-## 📖 Coding in Pure Simple English
+## Coding in Pure Simple English
 
 Lyslyn is engineered so that **every program reads like clear, structured English prose**, eliminating cryptic symbols and bracket fatigue:
 
@@ -67,7 +67,7 @@ Call greet with "Raj" and "Architect"
 
 ---
 
-## 🚀 30-Second Example: A Complete REST API
+## 30-Second Example: A Complete REST API
 
 ```lys
 Import db
@@ -109,7 +109,7 @@ Serve HTTP on port 8080:
 
 ---
 
-## 📦 Getting Started
+## Getting Started
 
 Both `lyslyn` and its short alias `lys` are installed and available in `$PATH`:
 
@@ -130,7 +130,7 @@ lys remove package_name
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 lyslyn/
@@ -226,7 +226,7 @@ lyslyn/
 
 ---
 
-## 📚 Documentation Links
+## Documentation Links
 
 - [Language Specification (`SPEC.md`)](SPEC.md): Formal EBNF grammar, backend syntax, and operational semantics.
 - [Reference Manual (`DOCS.md`)](DOCS.md): Complete guide to routing, database operations, security, and standard library.

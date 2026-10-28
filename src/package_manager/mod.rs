@@ -25,7 +25,10 @@ pub fn init_project(name: &str) -> Result<(), String> {
         fs::write(main_file, initial_code).map_err(|e| e.to_string())?;
     }
 
-    println!("✓ Initialized new Lyslyn project '{}' (lyslyn.toml, src/main.lys)", name);
+    println!(
+        "✓ Initialized new Lyslyn project '{}' (lyslyn.toml, src/main.lys)",
+        name
+    );
     Ok(())
 }
 
@@ -33,7 +36,9 @@ pub fn install_package(pkg: &str) -> Result<(), String> {
     let cwd = Path::new(".");
     let mut manifest = Manifest::load_from_dir(cwd)?;
 
-    manifest.dependencies.insert(pkg.to_string(), "*".to_string());
+    manifest
+        .dependencies
+        .insert(pkg.to_string(), "*".to_string());
     manifest.save_to_dir(cwd)?;
 
     println!("✓ Added package '{}' to dependencies in lyslyn.toml", pkg);
@@ -48,7 +53,10 @@ pub fn remove_package(pkg: &str) -> Result<(), String> {
         manifest.save_to_dir(cwd)?;
         println!("✓ Removed package '{}' from lyslyn.toml", pkg);
     } else {
-        println!("Package '{}' was not found in lyslyn.toml dependencies", pkg);
+        println!(
+            "Package '{}' was not found in lyslyn.toml dependencies",
+            pkg
+        );
     }
     Ok(())
 }

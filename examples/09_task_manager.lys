@@ -40,7 +40,7 @@ Create a function called add_task with title, priority:
     }
     append(tasks, new_task)
     save_tasks(tasks)
-    Print "✓ Added task:", title
+    Print "[OK] Added task:", title
 
 # Update task status to completed
 Create a function called complete_task with task_id:
@@ -49,9 +49,9 @@ Create a function called complete_task with task_id:
         If t.id is equal to task_id:
             Set t.completed to true
             save_tasks(tasks)
-            Print "✓ Marked task {task_id} as completed!"
+            Print "[OK] Marked task {task_id} as completed!"
             Return true
-    Print "✗ Task {task_id} not found."
+    Print "[FAIL] Task {task_id} not found."
     Return false
 
 # Render formatted task list
@@ -87,4 +87,4 @@ list_tasks()
 
 # Cleanup database file after demo
 files.delete(db_file)
-Print "✓ Demo completed and database cleaned up."
+Print "[OK] Demo completed and database cleaned up."

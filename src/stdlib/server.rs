@@ -11,7 +11,10 @@ pub fn create_server_module() -> Value {
         Value::NativeFunction(
             "cors".to_string(),
             Rc::new(|args| {
-                let origin = args.first().map(|a| a.to_string()).unwrap_or_else(|| "*".to_string());
+                let origin = args
+                    .first()
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(|| "*".to_string());
                 let mut mid = IndexMap::new();
                 mid.insert("type".to_string(), Value::Str("cors".to_string()));
                 mid.insert("origin".to_string(), Value::Str(origin));
@@ -54,7 +57,10 @@ pub fn create_server_module() -> Value {
             "jwt_auth".to_string(),
             Rc::new(|args| {
                 let secret = args.first().map(|a| a.to_string()).unwrap_or_default();
-                let whitelist = args.get(1).cloned().unwrap_or(Value::List(Rc::new(RefCell::new(Vec::new()))));
+                let whitelist = args
+                    .get(1)
+                    .cloned()
+                    .unwrap_or(Value::List(Rc::new(RefCell::new(Vec::new()))));
                 let mut mid = IndexMap::new();
                 mid.insert("type".to_string(), Value::Str("jwt_auth".to_string()));
                 mid.insert("secret".to_string(), Value::Str(secret));

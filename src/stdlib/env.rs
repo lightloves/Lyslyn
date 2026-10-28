@@ -76,7 +76,8 @@ pub fn create_env_module() -> Value {
                     match env::var(&key) {
                         Ok(val) => {
                             let v_lower = val.to_lowercase();
-                            let is_true = matches!(v_lower.as_str(), "true" | "1" | "yes" | "on" | "t");
+                            let is_true =
+                                matches!(v_lower.as_str(), "true" | "1" | "yes" | "on" | "t");
                             Ok(Value::Bool(is_true))
                         }
                         Err(_) => Ok(Value::Bool(default)),

@@ -96,4 +96,4 @@ Say "Repeated divider:", text.repeat("=-", 15)
 Say "Index of 'Service':", text.index_of(log_entry, "Service")
 Say "First character:", text.char_at(log_entry, 0)
 
-Say "\n✓ Industrial-grade Java & Python level capabilities verified successfully!"
+Say "\n[OK] Industrial-grade Java & Python level capabilities verified successfully!"

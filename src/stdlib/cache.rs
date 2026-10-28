@@ -58,7 +58,13 @@ pub fn create_cache_module() -> Value {
 
                     let expire_at = ttl_sec.map(|t| current_time() + t);
                     with_cache(|map| {
-                        map.insert(key, CacheEntry { value: val.clone(), expire_at });
+                        map.insert(
+                            key,
+                            CacheEntry {
+                                value: val.clone(),
+                                expire_at,
+                            },
+                        );
                     });
                     Ok(val)
                 } else {

@@ -119,7 +119,8 @@ impl ModuleLoader {
             exports: Rc::new(RefCell::new(exports)),
         }));
 
-        self.cached_modules.insert(name.to_string(), module_val.clone());
+        self.cached_modules
+            .insert(name.to_string(), module_val.clone());
         Ok(module_val)
     }
 }

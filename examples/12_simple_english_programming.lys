@@ -1,64 +1,53 @@
-# Showcase of pure, structured Simple English programming in Lyslyn
-Set developer to "Raj"
-Set age to 21
+# Pure Simple English programming showcase in Lyslyn
 
-# Natural English list declaration with "a list of ... and ..."
-Set programming_languages to a list of "Lyslyn", "Python", "Rust" and "TypeScript"
+# Natural English collections
+Set languages to a list of "Lyslyn", "Python" and "Rust"
+Add "SQL" to languages
 
-# Natural English collection mutation with "Add ... to ..."
-Add "SQL" to programming_languages
+Display "Active languages:", languages
 
-Display "Developer:", developer
-Display "Languages mastered:", programming_languages
+# Natural English object definition
+Set profile to an object with:
+    username: "Raj"
+    role: "Architect"
+    age: 21
 
-# Natural English object definition with "an object with:"
-Set workstation to an object with:
-    hostname: "workstation-01"
-    os: "Linux"
-    ram_gb: 32
+Display "User profile:", profile.username, "-", profile.role
 
-Display "Workstation hostname:", workstation.hostname
-Display "Operating system:", workstation.os
-
-# Natural English comparison operators: "is at least", "is not empty", "is odd"
-If age is at least 18:
-    Display "Developer is an adult."
+# Natural English conditions
+If profile.age is at least 18:
+    Display "Welcome, adult user!"
 Otherwise:
-    Display "Developer is a minor."
+    Display "Welcome, junior user!"
 
-If programming_languages is not empty:
-    Display "Language count is positive and active."
+If languages is not empty:
+    Display "Language list is verified and non-empty."
 
-Set empty_inbox to an empty list
-If empty_inbox is empty:
-    Display "Inbox has zero pending messages."
+If profile.age is odd:
+    Display "Age is an odd number."
 
-If age is odd:
-    Display "Age ({age}) is an odd number."
-
-# Natural English iteration with "For every ... in ..." and "Skip to next"
-Display "\n--- Iterating Over Skills ---"
-For every lang in programming_languages:
+# Natural English iteration and loop control
+Display "\n--- Iterating Over Languages ---"
+For every lang in languages:
     If lang is equal to "Lyslyn":
-        Display "★ Top recommendation:", lang
-        Skip to next
-    Display "Skill:", lang
+        Display "Found primary language:", lang
+        Stop the loop
+    Display "Language option:", lang
 
-# Natural English repetition with "Do n times:"
+# Natural English repetition
 Display "\n--- Repeating an Action ---"
 Do 3 times:
-    Display "Lyslyn code reads like clear English prose!"
+    Display "Lyslyn makes coding simple English!"
 
-# Natural English function definition with "Give back" return
-Create a function called build_greeting with name and title:
-    Set full_msg to "Greetings, " + title + " " + name + "! Welcome to Lyslyn."
-    Give back full_msg
+# Natural English function definition with Give back
+Create a function called greet with name and role:
+    Give back "Hello " + name + " (" + role + ")"
 
-Set greeting to build_greeting("Raj", "Lead Engineer")
+# Function calling
+Set greeting to Call greet with "Raj" and "Architect"
 Display greeting
 
-# Natural English function calling with "Call ... with ... and ..."
 Create a function called announce with event and date:
     Display "Announcement: [" + event + "] scheduled on " + date
 
-Call announce with "Lyslyn 2.0 Launch" and "October 2026"
+Call announce with "Lyslyn 1.0.0 Launch" and "October 2026"

@@ -89,25 +89,37 @@ impl Parser {
             self.give_back_statement()
         } else if self.match_token(&TokenType::Break) {
             let span = self.previous().span.clone();
-            while !self.check(&TokenType::Newline) && !self.is_at_end() && !self.check(&TokenType::Dedent) {
+            while !self.check(&TokenType::Newline)
+                && !self.is_at_end()
+                && !self.check(&TokenType::Dedent)
+            {
                 self.advance();
             }
             Ok(Stmt::Break(span))
         } else if self.match_token(&TokenType::Stop) {
             let span = self.previous().span.clone();
-            while !self.check(&TokenType::Newline) && !self.is_at_end() && !self.check(&TokenType::Dedent) {
+            while !self.check(&TokenType::Newline)
+                && !self.is_at_end()
+                && !self.check(&TokenType::Dedent)
+            {
                 self.advance();
             }
             Ok(Stmt::Break(span))
         } else if self.match_token(&TokenType::Continue) {
             let span = self.previous().span.clone();
-            while !self.check(&TokenType::Newline) && !self.is_at_end() && !self.check(&TokenType::Dedent) {
+            while !self.check(&TokenType::Newline)
+                && !self.is_at_end()
+                && !self.check(&TokenType::Dedent)
+            {
                 self.advance();
             }
             Ok(Stmt::Continue(span))
         } else if self.match_token(&TokenType::Skip) {
             let span = self.previous().span.clone();
-            while !self.check(&TokenType::Newline) && !self.is_at_end() && !self.check(&TokenType::Dedent) {
+            while !self.check(&TokenType::Newline)
+                && !self.is_at_end()
+                && !self.check(&TokenType::Dedent)
+            {
                 self.advance();
             }
             Ok(Stmt::Continue(span))
@@ -319,7 +331,10 @@ impl Parser {
         if self.match_token(&TokenType::Class) {
             return self.class_statement(span);
         }
-        self.consume(&TokenType::Function, "Expected 'function' or 'class' after 'create/define'")?;
+        self.consume(
+            &TokenType::Function,
+            "Expected 'function' or 'class' after 'create/define'",
+        )?;
         let _ = self.match_token(&TokenType::Called);
 
         let name_tok = self.consume_identifier("Expected function name")?;
@@ -371,7 +386,10 @@ impl Parser {
 
         self.consume(&TokenType::Colon, "Expected ':' after class declaration")?;
         while self.match_token(&TokenType::Newline) {}
-        self.consume(&TokenType::Indent, "Expected indented block for class members")?;
+        self.consume(
+            &TokenType::Indent,
+            "Expected indented block for class members",
+        )?;
 
         let mut constructor = None;
         let mut methods = Vec::new();
@@ -390,7 +408,9 @@ impl Parser {
                     if !self.check(&TokenType::Colon) {
                         let p = self.consume_identifier("Expected parameter name")?;
                         params.push(p.lexeme);
-                        while self.match_token(&TokenType::Comma) || self.match_token(&TokenType::And) {
+                        while self.match_token(&TokenType::Comma)
+                            || self.match_token(&TokenType::And)
+                        {
                             let p2 = self.consume_identifier("Expected parameter name")?;
                             params.push(p2.lexeme);
                         }
@@ -406,7 +426,10 @@ impl Parser {
                     }
                     self.consume(&TokenType::RParen, "Expected ')' after parameters")?;
                 }
-                self.consume(&TokenType::Colon, "Expected ':' after constructor declaration")?;
+                self.consume(
+                    &TokenType::Colon,
+                    "Expected ':' after constructor declaration",
+                )?;
                 let body = self.block()?;
                 constructor = Some(ClassMethod {
                     name: "initialize".to_string(),
@@ -420,7 +443,9 @@ impl Parser {
                     if !self.check(&TokenType::Colon) {
                         let p = self.consume_identifier("Expected parameter name")?;
                         params.push(p.lexeme);
-                        while self.match_token(&TokenType::Comma) || self.match_token(&TokenType::And) {
+                        while self.match_token(&TokenType::Comma)
+                            || self.match_token(&TokenType::And)
+                        {
                             let p2 = self.consume_identifier("Expected parameter name")?;
                             params.push(p2.lexeme);
                         }
@@ -436,7 +461,10 @@ impl Parser {
                     }
                     self.consume(&TokenType::RParen, "Expected ')' after parameters")?;
                 }
-                self.consume(&TokenType::Colon, "Expected ':' after constructor declaration")?;
+                self.consume(
+                    &TokenType::Colon,
+                    "Expected ':' after constructor declaration",
+                )?;
                 let body = self.block()?;
                 constructor = Some(ClassMethod {
                     name: "initialize".to_string(),
@@ -444,14 +472,17 @@ impl Parser {
                     body,
                     span: member_span,
                 });
-            } else if self.match_token(&TokenType::Method) || self.match_token(&TokenType::Function) {
+            } else if self.match_token(&TokenType::Method) || self.match_token(&TokenType::Function)
+            {
                 let method_name = self.consume_identifier("Expected method name")?;
                 let mut params = Vec::new();
                 if self.match_token(&TokenType::With) {
                     if !self.check(&TokenType::Colon) {
                         let p = self.consume_identifier("Expected parameter name")?;
                         params.push(p.lexeme);
-                        while self.match_token(&TokenType::Comma) || self.match_token(&TokenType::And) {
+                        while self.match_token(&TokenType::Comma)
+                            || self.match_token(&TokenType::And)
+                        {
                             let p2 = self.consume_identifier("Expected parameter name")?;
                             params.push(p2.lexeme);
                         }
@@ -560,7 +591,8 @@ impl Parser {
 
     fn return_statement(&mut self) -> Result<Stmt, LyslynError> {
         let span = self.previous().span.clone();
-        if self.match_token(&TokenType::Nil) || self.check(&TokenType::Newline) || self.is_at_end() {
+        if self.match_token(&TokenType::Nil) || self.check(&TokenType::Newline) || self.is_at_end()
+        {
             Ok(Stmt::Return { value: None, span })
         } else {
             let val = self.expression()?;
@@ -574,7 +606,8 @@ impl Parser {
     fn give_back_statement(&mut self) -> Result<Stmt, LyslynError> {
         let span = self.previous().span.clone();
         self.consume(&TokenType::Back, "Expected 'back' after 'Give'")?;
-        if self.match_token(&TokenType::Nil) || self.check(&TokenType::Newline) || self.is_at_end() {
+        if self.match_token(&TokenType::Nil) || self.check(&TokenType::Newline) || self.is_at_end()
+        {
             Ok(Stmt::Return { value: None, span })
         } else {
             let val = self.expression()?;
@@ -611,7 +644,8 @@ impl Parser {
             self.advance();
             s
         } else {
-            self.consume_identifier("Expected module name after 'Get'")?.lexeme
+            self.consume_identifier("Expected module name after 'Get'")?
+                .lexeme
         };
         let alias = if self.match_token(&TokenType::As) {
             Some(self.consume_identifier("Expected alias after 'as'")?.lexeme)
@@ -632,7 +666,8 @@ impl Parser {
             self.advance();
             s
         } else {
-            self.consume_identifier("Expected module name after 'Import'")?.lexeme
+            self.consume_identifier("Expected module name after 'Import'")?
+                .lexeme
         };
         let alias = if self.match_token(&TokenType::As) {
             Some(self.consume_identifier("Expected alias after 'as'")?.lexeme)
@@ -738,9 +773,15 @@ impl Parser {
                 host = Some(self.expression()?);
             }
         }
-        self.consume(&TokenType::Colon, "Expected ':' after serve statement header")?;
+        self.consume(
+            &TokenType::Colon,
+            "Expected ':' after serve statement header",
+        )?;
         while self.match_token(&TokenType::Newline) {}
-        self.consume(&TokenType::Indent, "Expected indented block for server definition")?;
+        self.consume(
+            &TokenType::Indent,
+            "Expected indented block for server definition",
+        )?;
 
         let mut middlewares = Vec::new();
         let mut routes = Vec::new();
@@ -756,14 +797,16 @@ impl Parser {
                 middlewares.push(mid);
             } else if self.match_token(&TokenType::Route) {
                 let route_span = self.previous().span.clone();
-                let method_tok = self.consume_identifier("Expected HTTP method (GET, POST, PUT, DELETE, etc.)")?;
+                let method_tok =
+                    self.consume_identifier("Expected HTTP method (GET, POST, PUT, DELETE, etc.)")?;
                 let method = method_tok.lexeme.to_uppercase();
                 let path = if let TokenType::String(ref s) = self.peek().token_type {
                     let p = s.clone();
                     self.advance();
                     p
                 } else {
-                    self.consume_identifier("Expected route path string e.g. \"/api/products\"")?.lexeme
+                    self.consume_identifier("Expected route path string e.g. \"/api/products\"")?
+                        .lexeme
                 };
                 self.consume(&TokenType::Colon, "Expected ':' after route path")?;
                 let body = self.block()?;
@@ -791,7 +834,10 @@ impl Parser {
     fn respond_statement(&mut self) -> Result<Stmt, LyslynError> {
         let span = self.previous().span.clone();
         let _ = self.match_token(&TokenType::With);
-        self.consume(&TokenType::Status, "Expected 'status' after 'Respond [with]'")?;
+        self.consume(
+            &TokenType::Status,
+            "Expected 'status' after 'Respond [with]'",
+        )?;
         let status = self.term()?;
         let _ = self.match_token(&TokenType::And);
 
@@ -852,7 +898,10 @@ impl Parser {
 
         if self.match_token(&TokenType::Colon) {
             while self.match_token(&TokenType::Newline) {}
-            self.consume(&TokenType::Indent, "Expected indented block for HTTP options")?;
+            self.consume(
+                &TokenType::Indent,
+                "Expected indented block for HTTP options",
+            )?;
 
             while !self.check(&TokenType::Dedent) && !self.is_at_end() {
                 while self.match_token(&TokenType::Newline) {}
@@ -860,28 +909,36 @@ impl Parser {
                     break;
                 }
                 if self.match_token(&TokenType::Headers) {
-                    let _ = self.match_token(&TokenType::Colon) || self.match_token(&TokenType::EqualSign);
+                    let _ = self.match_token(&TokenType::Colon)
+                        || self.match_token(&TokenType::EqualSign);
                     headers = Some(self.expression()?);
                 } else if self.match_token(&TokenType::Data) {
-                    let _ = self.match_token(&TokenType::Colon) || self.match_token(&TokenType::EqualSign);
+                    let _ = self.match_token(&TokenType::Colon)
+                        || self.match_token(&TokenType::EqualSign);
                     data = Some(self.expression()?);
                 } else if self.match_token(&TokenType::Params) {
-                    let _ = self.match_token(&TokenType::Colon) || self.match_token(&TokenType::EqualSign);
+                    let _ = self.match_token(&TokenType::Colon)
+                        || self.match_token(&TokenType::EqualSign);
                     params = Some(self.expression()?);
                 } else if self.match_token(&TokenType::Timeout) {
-                    let _ = self.match_token(&TokenType::Colon) || self.match_token(&TokenType::EqualSign);
+                    let _ = self.match_token(&TokenType::Colon)
+                        || self.match_token(&TokenType::EqualSign);
                     timeout = Some(self.expression()?);
                 } else if self.match_token(&TokenType::Save) {
                     let _ = self.match_token(&TokenType::The);
                     self.consume(&TokenType::Response, "Expected 'response' after 'save'")?;
                     self.consume(&TokenType::As, "Expected 'as' after 'response'")?;
-                    let resp_tok = self.consume_identifier("Expected variable name for response")?;
+                    let resp_tok =
+                        self.consume_identifier("Expected variable name for response")?;
                     response_var = resp_tok.lexeme;
                 } else {
                     return Err(self.error("Unexpected option in HTTP request block"));
                 }
             }
-            self.consume(&TokenType::Dedent, "Expected dedent after HTTP request block")?;
+            self.consume(
+                &TokenType::Dedent,
+                "Expected dedent after HTTP request block",
+            )?;
         } else {
             if self.match_token(&TokenType::Save) {
                 let _ = self.match_token(&TokenType::The);
@@ -965,10 +1022,20 @@ impl Parser {
                 if self.match_token(&TokenType::At) {
                     if self.match_token(&TokenType::Least) {
                         let right = self.term()?;
-                        expr = Expr::Binary(Box::new(expr), BinaryOp::GreaterEqual, Box::new(right), span);
+                        expr = Expr::Binary(
+                            Box::new(expr),
+                            BinaryOp::GreaterEqual,
+                            Box::new(right),
+                            span,
+                        );
                     } else if self.match_token(&TokenType::Most) {
                         let right = self.term()?;
-                        expr = Expr::Binary(Box::new(expr), BinaryOp::LessEqual, Box::new(right), span);
+                        expr = Expr::Binary(
+                            Box::new(expr),
+                            BinaryOp::LessEqual,
+                            Box::new(right),
+                            span,
+                        );
                     } else {
                         return Err(self.error("Expected 'least' or 'most' after 'is at'"));
                     }
@@ -988,7 +1055,8 @@ impl Parser {
                     if self.match_token(&TokenType::Equal) {
                         let _ = self.match_token(&TokenType::To);
                         let right = self.term()?;
-                        expr = Expr::Binary(Box::new(expr), BinaryOp::NotEqual, Box::new(right), span);
+                        expr =
+                            Expr::Binary(Box::new(expr), BinaryOp::NotEqual, Box::new(right), span);
                     } else if self.match_token(&TokenType::Positive) {
                         expr = Expr::Unary(UnaryOp::IsNotPositive, Box::new(expr), span);
                     } else if self.match_token(&TokenType::Negative) {
@@ -1005,31 +1073,100 @@ impl Parser {
                         if self.match_token(&TokenType::Instance) {
                             self.consume(&TokenType::Of, "Expected 'of' after 'instance'")?;
                             let class_tok = self.consume_identifier("Expected class name")?;
-                            let inst_expr = Expr::IsInstance(Box::new(expr), class_tok.lexeme, span.clone());
+                            let inst_expr =
+                                Expr::IsInstance(Box::new(expr), class_tok.lexeme, span.clone());
                             expr = Expr::Unary(UnaryOp::Not, Box::new(inst_expr), span);
                         } else if self.match_token(&TokenType::StringKeyword) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsString, Box::new(expr), span.clone())), span);
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(
+                                    UnaryOp::IsString,
+                                    Box::new(expr),
+                                    span.clone(),
+                                )),
+                                span,
+                            );
                         } else if self.match_token(&TokenType::NumberKeyword) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsNumber, Box::new(expr), span.clone())), span);
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(
+                                    UnaryOp::IsNumber,
+                                    Box::new(expr),
+                                    span.clone(),
+                                )),
+                                span,
+                            );
                         } else if self.match_token(&TokenType::IntegerKeyword) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsInteger, Box::new(expr), span.clone())), span);
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(
+                                    UnaryOp::IsInteger,
+                                    Box::new(expr),
+                                    span.clone(),
+                                )),
+                                span,
+                            );
                         } else if self.match_token(&TokenType::FloatKeyword) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsFloat, Box::new(expr), span.clone())), span);
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(
+                                    UnaryOp::IsFloat,
+                                    Box::new(expr),
+                                    span.clone(),
+                                )),
+                                span,
+                            );
                         } else if self.match_token(&TokenType::BooleanKeyword) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsBoolean, Box::new(expr), span.clone())), span);
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(
+                                    UnaryOp::IsBoolean,
+                                    Box::new(expr),
+                                    span.clone(),
+                                )),
+                                span,
+                            );
                         } else if self.match_token(&TokenType::List) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsList, Box::new(expr), span.clone())), span);
-                        } else if self.match_token(&TokenType::Object) || self.match_token(&TokenType::MapKeyword) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsMap, Box::new(expr), span.clone())), span);
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(
+                                    UnaryOp::IsList,
+                                    Box::new(expr),
+                                    span.clone(),
+                                )),
+                                span,
+                            );
+                        } else if self.match_token(&TokenType::Object)
+                            || self.match_token(&TokenType::MapKeyword)
+                        {
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(UnaryOp::IsMap, Box::new(expr), span.clone())),
+                                span,
+                            );
                         } else if self.match_token(&TokenType::Function) {
-                            expr = Expr::Unary(UnaryOp::Not, Box::new(Expr::Unary(UnaryOp::IsFunction, Box::new(expr), span.clone())), span);
+                            expr = Expr::Unary(
+                                UnaryOp::Not,
+                                Box::new(Expr::Unary(
+                                    UnaryOp::IsFunction,
+                                    Box::new(expr),
+                                    span.clone(),
+                                )),
+                                span,
+                            );
                         } else {
                             let right = self.term()?;
-                            expr = Expr::Binary(Box::new(expr), BinaryOp::NotEqual, Box::new(right), span);
+                            expr = Expr::Binary(
+                                Box::new(expr),
+                                BinaryOp::NotEqual,
+                                Box::new(right),
+                                span,
+                            );
                         }
                     } else {
                         let right = self.term()?;
-                        expr = Expr::Binary(Box::new(expr), BinaryOp::NotEqual, Box::new(right), span);
+                        expr =
+                            Expr::Binary(Box::new(expr), BinaryOp::NotEqual, Box::new(right), span);
                     }
                 } else if self.match_token(&TokenType::Positive) {
                     expr = Expr::Unary(UnaryOp::IsPositive, Box::new(expr), span);
@@ -1062,12 +1199,16 @@ impl Parser {
                         expr = Expr::Unary(UnaryOp::IsBoolean, Box::new(expr), span);
                     } else if self.match_token(&TokenType::List) {
                         expr = Expr::Unary(UnaryOp::IsList, Box::new(expr), span);
-                    } else if self.match_token(&TokenType::Object) || self.match_token(&TokenType::MapKeyword) {
+                    } else if self.match_token(&TokenType::Object)
+                        || self.match_token(&TokenType::MapKeyword)
+                    {
                         expr = Expr::Unary(UnaryOp::IsMap, Box::new(expr), span);
                     } else if self.match_token(&TokenType::Function) {
                         expr = Expr::Unary(UnaryOp::IsFunction, Box::new(expr), span);
                     } else {
-                        return Err(self.error("Expected type name or 'instance of' after 'is a/an'"));
+                        return Err(
+                            self.error("Expected type name or 'instance of' after 'is a/an'")
+                        );
                     }
                 } else if self.match_token(&TokenType::Instance) {
                     self.consume(&TokenType::Of, "Expected 'of' after 'instance'")?;
@@ -1103,7 +1244,12 @@ impl Parser {
             } else if self.match_token(&TokenType::GreaterEqual) {
                 let span = self.previous().span.clone();
                 let right = self.term()?;
-                expr = Expr::Binary(Box::new(expr), BinaryOp::GreaterEqual, Box::new(right), span);
+                expr = Expr::Binary(
+                    Box::new(expr),
+                    BinaryOp::GreaterEqual,
+                    Box::new(right),
+                    span,
+                );
             } else if self.match_token(&TokenType::LessThan) {
                 let span = self.previous().span.clone();
                 let right = self.term()?;
@@ -1117,7 +1263,9 @@ impl Parser {
                 let right = self.term()?;
                 expr = Expr::Binary(Box::new(expr), BinaryOp::In, Box::new(right), span);
             } else if self.check(&TokenType::Not) {
-                if self.current + 1 < self.tokens.len() && self.tokens[self.current + 1].token_type == TokenType::In {
+                if self.current + 1 < self.tokens.len()
+                    && self.tokens[self.current + 1].token_type == TokenType::In
+                {
                     self.advance();
                     self.advance();
                     let span = self.previous().span.clone();
@@ -1197,7 +1345,10 @@ impl Parser {
                 expr = Expr::MemberAccess(Box::new(expr), name.lexeme, span);
             } else if self.match_token(&TokenType::LBracket) {
                 let index = self.expression()?;
-                let span = self.consume(&TokenType::RBracket, "Expected ']' after index")?.span.clone();
+                let span = self
+                    .consume(&TokenType::RBracket, "Expected ']' after index")?
+                    .span
+                    .clone();
                 expr = Expr::IndexAccess(Box::new(expr), Box::new(index), span);
             } else {
                 break;
@@ -1215,14 +1366,22 @@ impl Parser {
                 args.push(self.expression()?);
             }
         }
-        let span = self.consume(&TokenType::RParen, "Expected ')' after arguments")?.span.clone();
+        let span = self
+            .consume(&TokenType::RParen, "Expected ')' after arguments")?
+            .span
+            .clone();
         Ok(Expr::Call(Box::new(callee), args, span))
     }
 
     fn consume_property_name(&mut self) -> Result<Token, LyslynError> {
         if let TokenType::Identifier(_) = self.peek().token_type {
             Ok(self.advance().clone())
-        } else if self.peek().lexeme.chars().all(|c| c.is_alphabetic() || c == '_') {
+        } else if self
+            .peek()
+            .lexeme
+            .chars()
+            .all(|c| c.is_alphabetic() || c == '_')
+        {
             Ok(self.advance().clone())
         } else {
             Err(self.error("Expected property name after '.'"))
@@ -1278,7 +1437,10 @@ impl Parser {
                         elements.push(self.expression()?);
                     }
                 }
-                let span = self.consume(&TokenType::RBracket, "Expected ']' after list")?.span.clone();
+                let span = self
+                    .consume(&TokenType::RBracket, "Expected ']' after list")?
+                    .span
+                    .clone();
                 Ok(Expr::List(elements, span))
             }
             TokenType::LBrace => {
@@ -1295,7 +1457,10 @@ impl Parser {
                         }
                     }
                 }
-                let span = self.consume(&TokenType::RBrace, "Expected '}' after map")?.span.clone();
+                let span = self
+                    .consume(&TokenType::RBrace, "Expected '}' after map")?
+                    .span
+                    .clone();
                 Ok(Expr::Map(entries, span))
             }
             TokenType::A | TokenType::An => {
@@ -1321,7 +1486,9 @@ impl Parser {
                     let mut args = Vec::new();
                     if self.match_token(&TokenType::With) {
                         args.push(self.comparison()?);
-                        while self.match_token(&TokenType::Comma) || self.match_token(&TokenType::And) {
+                        while self.match_token(&TokenType::Comma)
+                            || self.match_token(&TokenType::And)
+                        {
                             args.push(self.comparison()?);
                         }
                     } else if self.match_token(&TokenType::LParen) {
@@ -1331,7 +1498,10 @@ impl Parser {
                                 args.push(self.expression()?);
                             }
                         }
-                        self.consume(&TokenType::RParen, "Expected ')' after class instantiation arguments")?;
+                        self.consume(
+                            &TokenType::RParen,
+                            "Expected ')' after class instantiation arguments",
+                        )?;
                     }
                     return Ok(Expr::New {
                         class_name: class_tok.lexeme,
@@ -1353,7 +1523,9 @@ impl Parser {
                     let mut elements = Vec::new();
                     if !self.check(&TokenType::Newline) && !self.is_at_end() {
                         elements.push(self.comparison()?);
-                        while self.match_token(&TokenType::Comma) || self.match_token(&TokenType::And) {
+                        while self.match_token(&TokenType::Comma)
+                            || self.match_token(&TokenType::And)
+                        {
                             elements.push(self.comparison()?);
                         }
                     }
@@ -1364,7 +1536,10 @@ impl Parser {
                     let _ = self.match_token(&TokenType::With);
                     self.consume(&TokenType::Colon, "Expected ':' after 'an object with'")?;
                     while self.match_token(&TokenType::Newline) {}
-                    self.consume(&TokenType::Indent, "Expected indented block for object fields")?;
+                    self.consume(
+                        &TokenType::Indent,
+                        "Expected indented block for object fields",
+                    )?;
 
                     let mut entries = Vec::new();
                     while !self.check(&TokenType::Dedent) && !self.is_at_end() {
@@ -1374,7 +1549,10 @@ impl Parser {
                         }
 
                         let key_tok = self.consume_property_name()?;
-                        let key_expr = Expr::Literal(LiteralValue::String(key_tok.lexeme), key_tok.span.clone());
+                        let key_expr = Expr::Literal(
+                            LiteralValue::String(key_tok.lexeme),
+                            key_tok.span.clone(),
+                        );
                         self.consume(&TokenType::Colon, "Expected ':' after object field name")?;
                         let val_expr = self.expression()?;
                         entries.push((key_expr, val_expr));
@@ -1446,7 +1624,10 @@ impl Parser {
                             args.push(self.expression()?);
                         }
                     }
-                    self.consume(&TokenType::RParen, "Expected ')' after class instantiation arguments")?;
+                    self.consume(
+                        &TokenType::RParen,
+                        "Expected ')' after class instantiation arguments",
+                    )?;
                 }
                 Ok(Expr::New {
                     class_name: class_tok.lexeme,
@@ -1493,7 +1674,10 @@ impl Parser {
                 self.advance();
                 Ok(Expr::Variable(tok.lexeme.clone(), tok.span))
             }
-            _ => Err(self.error(format!("Unexpected token '{:?}' in expression", tok.token_type))),
+            _ => Err(self.error(format!(
+                "Unexpected token '{:?}' in expression",
+                tok.token_type
+            ))),
         }
     }
 
@@ -1584,7 +1768,8 @@ impl Parser {
                     if !expr_str_trimmed.contains(':') && !expr_str_trimmed.is_empty() {
                         let mut sub_scanner = Scanner::new(expr_str_trimmed, &self.filename);
                         if let Ok(tokens) = sub_scanner.scan_tokens() {
-                            let mut sub_parser = Parser::new(tokens, &self.filename, expr_str_trimmed);
+                            let mut sub_parser =
+                                Parser::new(tokens, &self.filename, expr_str_trimmed);
                             if let Ok(inner) = sub_parser.expression() {
                                 if sub_parser.is_at_end() || sub_parser.check(&TokenType::Newline) {
                                     parts.push(inner);

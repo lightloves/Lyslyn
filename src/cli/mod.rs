@@ -16,7 +16,10 @@ pub fn run_cli(args: Vec<String>) -> Result<(), i32> {
         } else {
             Vec::new()
         };
-        let exe_name = args.get(0).cloned().unwrap_or_else(|| "<standalone>".to_string());
+        let exe_name = args
+            .get(0)
+            .cloned()
+            .unwrap_or_else(|| "<standalone>".to_string());
         return execute_source(&source, &exe_name, script_args);
     }
 
@@ -29,7 +32,7 @@ pub fn run_cli(args: Vec<String>) -> Result<(), i32> {
 
     match command {
         "-v" | "--version" | "version" => {
-            println!("Lyslyn v2.0.0 (Rust Native VM)");
+            println!("Lyslyn v1.0.0 (Rust Native VM)");
             Ok(())
         }
         "-h" | "--help" | "help" => {
@@ -269,7 +272,12 @@ pub fn build_file(filename: &str, out_path: Option<&str>) -> Result<(), i32> {
     let final_out = out_path.unwrap_or(&default_out);
 
     fs::write(final_out, &chunk.code).map_err(|e| {
-        eprintln!("{}: Cannot write output '{}': {}", "Error".red(), final_out, e);
+        eprintln!(
+            "{}: Cannot write output '{}': {}",
+            "Error".red(),
+            final_out,
+            e
+        );
         1
     })?;
 
@@ -338,7 +346,7 @@ pub fn benchmark_file(filename: &str, iterations: usize) -> Result<(), i32> {
 
     println!(
         "{} Benchmarking '{}' over {} iterations...",
-        "⚡".yellow().bold(),
+        "[BENCH]".yellow().bold(),
         filename,
         iterations
     );
@@ -372,7 +380,7 @@ pub fn benchmark_file(filename: &str, iterations: usize) -> Result<(), i32> {
 }
 
 pub fn run_repl() -> Result<(), i32> {
-    println!("{}", "Lyslyn 2.0.0 Interactive REPL".cyan().bold());
+    println!("{}", "Lyslyn 1.0.0 Interactive REPL".cyan().bold());
     println!("Type 'exit' to quit. Multiline blocks use 4-space indentation.\n");
 
     let mut vm = VM::new(None);
@@ -608,7 +616,12 @@ pub fn compile_standalone(filename: &str, out_path: &str) -> Result<(), i32> {
     binary_bytes.extend_from_slice(magic);
 
     fs::write(out_path, &binary_bytes).map_err(|e| {
-        eprintln!("{}: Cannot write output binary '{}': {}", "Error".red(), out_path, e);
+        eprintln!(
+            "{}: Cannot write output binary '{}': {}",
+            "Error".red(),
+            out_path,
+            e
+        );
         1
     })?;
 
@@ -634,7 +647,7 @@ pub fn compile_standalone(filename: &str, out_path: &str) -> Result<(), i32> {
 fn print_help() {
     println!(
         "{} - The Simple-English Systems Programming Language\n",
-        "Lyslyn 2.0 (Native Rust Engine)".cyan().bold()
+        "Lyslyn 1.0 (Native Rust Engine)".cyan().bold()
     );
     println!("Usage:");
     println!("  lyslyn <file.lys> [args...]       Execute a Lyslyn script directly");

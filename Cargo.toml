@@ -1,6 +1,6 @@
 [package]
 name = "lyslyn"
-version = "2.0.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["Lyslyn Authors <team@lyslyn.org>"]
 description = "Lyslyn: An independent, simple-English systems programming language"

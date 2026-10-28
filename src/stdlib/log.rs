@@ -105,10 +105,7 @@ pub fn create_log_module() -> Value {
 
     exports.insert(
         "set_format".to_string(),
-        Value::NativeFunction(
-            "set_format".to_string(),
-            Rc::new(|_| Ok(Value::Nil)),
-        ),
+        Value::NativeFunction("set_format".to_string(), Rc::new(|_| Ok(Value::Nil))),
     );
 
     Value::Module(Rc::new(LyslynModule {

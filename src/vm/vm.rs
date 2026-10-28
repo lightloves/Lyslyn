@@ -102,7 +102,8 @@ impl VM {
             "keys".to_string(),
             Rc::new(|args| {
                 if let Some(Value::Map(m)) = args.first() {
-                    let k_list: Vec<Value> = m.borrow().keys().map(|k| Value::Str(k.clone())).collect();
+                    let k_list: Vec<Value> =
+                        m.borrow().keys().map(|k| Value::Str(k.clone())).collect();
                     Ok(Value::List(Rc::new(RefCell::new(k_list))))
                 } else {
                     Err("Expected map argument to keys".to_string())
@@ -179,7 +180,9 @@ impl VM {
                             Value::Bool(_) => "bool",
                             Value::List(_) => "list",
                             Value::Map(_) => "map",
-                            Value::Function(_) | Value::NativeFunction(_, _) | Value::BoundMethod(_, _) => "function",
+                            Value::Function(_)
+                            | Value::NativeFunction(_, _)
+                            | Value::BoundMethod(_, _) => "function",
                             Value::Class(_) => "class",
                             Value::Instance(_) => "instance",
                             Value::Nil => "nil",
@@ -704,7 +707,10 @@ impl VM {
                 self.try_handlers.pop();
             }
             OpCode::Raise => {
-                let err_val = self.stack.pop().unwrap_or_else(|| Value::Str("Error raised".to_string()));
+                let err_val = self
+                    .stack
+                    .pop()
+                    .unwrap_or_else(|| Value::Str("Error raised".to_string()));
                 self.handle_error(err_val, line)?;
             }
             OpCode::Call => {
@@ -730,7 +736,8 @@ impl VM {
                                 }
                             }
                         }
-                        self.stack.push(Value::List(Rc::new(RefCell::new(filtered))));
+                        self.stack
+                            .push(Value::List(Rc::new(RefCell::new(filtered))));
                         return Ok(true);
                     } else if name.eq_ignore_ascii_case("map") && args.len() >= 2 {
                         let coll = &args[0];
@@ -877,7 +884,8 @@ impl VM {
                     elements.push(self.stack.pop().unwrap());
                 }
                 elements.reverse();
-                self.stack.push(Value::List(Rc::new(RefCell::new(elements))));
+                self.stack
+                    .push(Value::List(Rc::new(RefCell::new(elements))));
             }
             OpCode::BuildMap => {
                 let count = self.read_u16() as usize;
@@ -899,10 +907,9 @@ impl VM {
                             Value::Int(i) => i,
                             Value::Float(f) => f as i64,
                             _ => {
-                                return Err(self.runtime_error(
-                                    line,
-                                    "List index must be an integer",
-                                ));
+                                return Err(
+                                    self.runtime_error(line, "List index must be an integer")
+                                );
                             }
                         };
                         let list = l.borrow();
@@ -965,8 +972,10 @@ impl VM {
             }
             OpCode::GetProperty => {
                 let prop_idx = self.read_u16();
-                let prop_name =
-                    format!("{}", self.current_frame().chunk.constants[prop_idx as usize]);
+                let prop_name = format!(
+                    "{}",
+                    self.current_frame().chunk.constants[prop_idx as usize]
+                );
                 let target = self.stack.pop().unwrap();
 
                 if let Some(prop_val) = target.get_property(&prop_name) {
@@ -984,8 +993,10 @@ impl VM {
             }
             OpCode::SetProperty => {
                 let prop_idx = self.read_u16();
-                let prop_name =
-                    format!("{}", self.current_frame().chunk.constants[prop_idx as usize]);
+                let prop_name = format!(
+                    "{}",
+                    self.current_frame().chunk.constants[prop_idx as usize]
+                );
                 let val = self.stack.pop().unwrap();
                 let target = self.stack.pop().unwrap();
 
@@ -1006,7 +1017,10 @@ impl VM {
             }
             OpCode::Class => {
                 let name_idx = self.read_u16();
-                let name = format!("{}", self.current_frame().chunk.constants[name_idx as usize]);
+                let name = format!(
+                    "{}",
+                    self.current_frame().chunk.constants[name_idx as usize]
+                );
                 let class_rc = Rc::new(RefCell::new(LyslynClass::new(&name)));
                 self.stack.push(Value::Class(class_rc));
             }
@@ -1030,7 +1044,10 @@ impl VM {
             }
             OpCode::Method => {
                 let name_idx = self.read_u16();
-                let name = format!("{}", self.current_frame().chunk.constants[name_idx as usize]);
+                let name = format!(
+                    "{}",
+                    self.current_frame().chunk.constants[name_idx as usize]
+                );
                 let fn_val = self.stack.pop().unwrap();
                 if let Value::Function(fn_rc) = fn_val {
                     if let Some(Value::Class(ref cls)) = self.stack.last() {
@@ -1058,7 +1075,10 @@ impl VM {
                 } else {
                     return Err(self.runtime_error(
                         line,
-                        format!("Cannot instantiate non-class type '{}'", class_val.type_name()),
+                        format!(
+                            "Cannot instantiate non-class type '{}'",
+                            class_val.type_name()
+                        ),
                     ));
                 }
             }
@@ -1097,10 +1117,13 @@ impl VM {
             }
             OpCode::IsInstance => {
                 let c_idx = self.read_u16();
-                let class_name = format!("{}", self.current_frame().chunk.constants[c_idx as usize]);
+                let class_name =
+                    format!("{}", self.current_frame().chunk.constants[c_idx as usize]);
                 let val = self.stack.pop().unwrap();
                 let is_inst = match val {
-                    Value::Instance(inst) => inst.borrow().class.borrow().is_subclass_of(&class_name),
+                    Value::Instance(inst) => {
+                        inst.borrow().class.borrow().is_subclass_of(&class_name)
+                    }
                     _ => false,
                 };
                 self.stack.push(Value::Bool(is_inst));
@@ -1114,7 +1137,9 @@ impl VM {
                     Value::Bool(_) => "bool",
                     Value::List(_) => "list",
                     Value::Map(_) => "map",
-                    Value::Function(_) | Value::NativeFunction(_, _) | Value::BoundMethod(_, _) => "function",
+                    Value::Function(_) | Value::NativeFunction(_, _) | Value::BoundMethod(_, _) => {
+                        "function"
+                    }
                     Value::Class(_) => "class",
                     Value::Instance(_) => "instance",
                     Value::Nil => "nil",
@@ -1128,7 +1153,8 @@ impl VM {
             }
             OpCode::IsNumber => {
                 let v = self.stack.pop().unwrap();
-                self.stack.push(Value::Bool(matches!(v, Value::Int(_) | Value::Float(_))));
+                self.stack
+                    .push(Value::Bool(matches!(v, Value::Int(_) | Value::Float(_))));
             }
             OpCode::IsInteger => {
                 let v = self.stack.pop().unwrap();
@@ -1263,6 +1289,11 @@ impl VM {
             .last()
             .map(|f| f.chunk.name.as_str())
             .unwrap_or("<main>");
-        LyslynError::new(ErrorKind::Runtime, message, Span::new(line, 1, 1), chunk_name)
+        LyslynError::new(
+            ErrorKind::Runtime,
+            message,
+            Span::new(line, 1, 1),
+            chunk_name,
+        )
     }
 }

@@ -172,9 +172,7 @@ impl Compiler {
                 names: _,
                 span,
             } => {
-                let const_idx = self
-                    .chunk
-                    .add_constant(Value::Str(module_name.clone()));
+                let const_idx = self.chunk.add_constant(Value::Str(module_name.clone()));
                 self.emit_opcode(OpCode::GetModule, span.line);
                 self.chunk.write_u16(const_idx, span.line);
 
@@ -271,7 +269,9 @@ impl Compiler {
                 self.compile_expr(port)?;
                 self.emit_opcode(OpCode::Serve, port.span().line);
             }
-            Stmt::Respond { status, payload, .. } => {
+            Stmt::Respond {
+                status, payload, ..
+            } => {
                 self.compile_expr(status)?;
                 self.compile_expr(payload)?;
                 self.emit_opcode(OpCode::Respond, status.span().line);
@@ -442,9 +442,7 @@ impl Compiler {
         self.emit_opcode(OpCode::GetLocal, iter.span().line);
         self.chunk.write_u16(iter_slot as u16, iter.span().line);
 
-        let len_idx = self
-            .chunk
-            .add_constant(Value::Str("length".to_string()));
+        let len_idx = self.chunk.add_constant(Value::Str("length".to_string()));
         self.emit_opcode(OpCode::GetProperty, iter.span().line);
         self.chunk.write_u16(len_idx, iter.span().line);
 
@@ -599,8 +597,11 @@ impl Compiler {
         }
 
         if let Some(ref c) = constructor {
-            let mut fn_compiler =
-                Compiler::new_function(&format!("{}.initialize", name), &self.filename, &self.source);
+            let mut fn_compiler = Compiler::new_function(
+                &format!("{}.initialize", name),
+                &self.filename,
+                &self.source,
+            );
             fn_compiler.begin_scope();
             for s in &c.body {
                 fn_compiler.compile_stmt(s)?;
@@ -623,8 +624,11 @@ impl Compiler {
         }
 
         for m in methods {
-            let mut fn_compiler =
-                Compiler::new_function(&format!("{}.{}", name, m.name), &self.filename, &self.source);
+            let mut fn_compiler = Compiler::new_function(
+                &format!("{}.{}", name, m.name),
+                &self.filename,
+                &self.source,
+            );
             fn_compiler.begin_scope();
             for s in &m.body {
                 fn_compiler.compile_stmt(s)?;
@@ -805,9 +809,7 @@ impl Compiler {
             }
             Expr::MemberAccess(target, member, span) => {
                 self.compile_expr(target)?;
-                let prop_idx = self
-                    .chunk
-                    .add_constant(Value::Str(member.clone()));
+                let prop_idx = self.chunk.add_constant(Value::Str(member.clone()));
                 self.emit_opcode(OpCode::GetProperty, span.line);
                 self.chunk.write_u16(prop_idx, span.line);
             }
@@ -836,7 +838,11 @@ impl Compiler {
             Expr::This(span) => {
                 self.compile_variable_load("this", span.line);
             }
-            Expr::New { class_name, args, span } => {
+            Expr::New {
+                class_name,
+                args,
+                span,
+            } => {
                 self.compile_variable_load(class_name, span.line);
                 for arg in args {
                     self.compile_expr(arg)?;

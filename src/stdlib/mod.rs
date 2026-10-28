@@ -31,13 +31,19 @@ pub fn get_standard_modules() -> IndexMap<String, Value> {
     mods.insert("time".to_string(), time::create_time_module());
     mods.insert("env".to_string(), env::create_env_module());
     mods.insert("crypto".to_string(), crypto::create_crypto_module());
-    mods.insert("collections".to_string(), collections::create_collections_module());
+    mods.insert(
+        "collections".to_string(),
+        collections::create_collections_module(),
+    );
     mods.insert("text".to_string(), text::create_text_module());
     mods.insert("random".to_string(), random::create_random_module());
     mods.insert("log".to_string(), log::create_log_module());
     mods.insert("jwt".to_string(), jwt::create_jwt_module());
     mods.insert("cache".to_string(), cache::create_cache_module());
-    mods.insert("validation".to_string(), validation::create_validation_module());
+    mods.insert(
+        "validation".to_string(),
+        validation::create_validation_module(),
+    );
     mods.insert("db".to_string(), db::create_db_module());
     mods.insert("server".to_string(), server::create_server_module());
     mods.insert("http".to_string(), http::create_http_module());
